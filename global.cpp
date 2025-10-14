@@ -1,6 +1,5 @@
 ﻿#include "global.h"
 #include <cmath>
-#define PI 3.1415926
 using namespace std;
 
 double l1;    //基座到关节的距离
@@ -10,7 +9,7 @@ double x_b2, y_b2;	 //基座终点坐标
 double x_e1, z_e1;    //末端起点坐标
 double x_e2, z_e2;    //末端终点坐标
 
-void init_robot_arm(double L1, double L2, double xb, double yb, double xe1, double ze1, double xe2, double ze2)
+void set_robot_arm(double L1, double L2, double xb, double yb, double xe1, double ze1, double xe2, double ze2)
 {
 	l1 = L1;
 	l2 = L2;

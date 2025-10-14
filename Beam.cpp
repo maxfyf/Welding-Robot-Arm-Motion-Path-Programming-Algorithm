@@ -9,11 +9,11 @@ using namespace std;
 int K;    //束宽
 double W1, W2;    //启发函数中机械臂夹角与基座偏移角的权重 
 double range;    //基座在x或y方向位移搜索上下限的绝对值
-double step;    //搜索步长
-bool optimize;	//是否优化
+double beam_step;    //搜索步长
+bool beam_optimize;	//是否优化
 
-vector<Base> base_path;    //基座路径
-vector<Joint> joint_path;    //关节路径
+vector<Base> beam_base_path;    //基座路径
+vector<Joint> beam_joint_path;    //关节路径
 
 int n;    //离散化小线段数
 int v;    //单次搜索空间大小
@@ -39,12 +39,11 @@ Output beam_search(int k, double w1, double w2, double r, double s, bool opt)
     W1 = w1;
     W2 = w2;
     range = r;
-    step = s;
-    optimize = opt;
+    beam_step = s;
+    beam_optimize = opt;
 
-    int least_times = (int)(abs(x_e1 - x_e2) / 0.1);
-	n = least_times * 10;
-	v = (int)((ubound - lbound) / step + 1) * (int)((ubound - lbound) / step + 1);
+    n = ((int)(abs(x_e1 - x_e2) / range))*ITER_RATIO;
+	v = (int)(2 * range / beam_step + 1) * (int)(2 * range / beam_step + 1);
 
     int size = 1;    //可能性空间大小
     double _x = x_e1, _z = z_e1;    //焊点实时坐标
@@ -105,8 +104,8 @@ Output beam_search(int k, double w1, double w2, double r, double s, bool opt)
         for (int j = 0; j < size; j++)
         {
             int indice = tree_index[j];
-            for (dx = -r; dx <= r; dx += step)
-                for (dy = -r; dy <= r; dy += step)
+            for (dx = -r; dx <= r; dx += beam_step)
+                for (dy = -r; dy <= r; dy += beam_step)
                 {
                     new_x0.push_back(x0[j] + dx);
                     new_y0.push_back(y0[j] + dy);
@@ -123,7 +122,7 @@ Output beam_search(int k, double w1, double w2, double r, double s, bool opt)
                         continue;
                     }
                     g.push_back(c[j] + dist2(new_x0.back(), new_y0.back(), x0[j], y0[j]) + dist3(new_x.back(), new_y.back(), new_z.back(), x[j], y[j], z[j]));
-                    if (optimize)
+                    if (beam_optimize)
                     {
                         f.push_back(g.back() + h(new_x0.back(), new_y0.back(), new_x.back(), new_y.back(), new_z.back(), _x, _z));
                         temp.push_back(f.back());
@@ -139,7 +138,7 @@ Output beam_search(int k, double w1, double w2, double r, double s, bool opt)
             double threshold = temp[size - 1];
             int cnt = 0;
             for (int j = 0; j < g.size(); j++)
-                if (!optimize && g[j] < threshold || optimize && f[j] < threshold)
+                if (!beam_optimize && g[j] < threshold || beam_optimize && f[j] < threshold)
                 {
                     x0[cnt] = new_x0[j];
                     y0[cnt] = new_y0[j];
@@ -193,13 +192,13 @@ Output beam_search(int k, double w1, double w2, double r, double s, bool opt)
 		index_path.push_back(tree[index_path.back()].parent_indice);
     for (int i = (int)index_path.size() - 1; i >= 0; i--)
     {
-        base_path.push_back({ tree[index_path[i]].x0, tree[index_path[i]].y0 });
+        beam_base_path.push_back({ tree[index_path[i]].x0, tree[index_path[i]].y0 });
         double x_f, y_f, z_f;
 		calculate_joint_position(tree[index_path[i]].x0, tree[index_path[i]].y0, x_e1 + (x_e2 - x_e1) * (index_path.size() - 1 - i) / (index_path.size() - 1), z_e1 + (z_e2 - z_e1) * (index_path.size() - 1 - i) / (index_path.size() - 1), x_f, y_f, z_f);
-		joint_path.push_back({ x_f, y_f, z_f });
+		beam_joint_path.push_back({ x_f, y_f, z_f });
     }
-	x_b2 = base_path.back().x;
-	y_b2 = base_path.back().y;
+	x_b2 = beam_base_path.back().x;
+	y_b2 = beam_base_path.back().y;
 
     auto end = std::chrono::high_resolution_clock::now();
     double t = (chrono::duration_cast<chrono::milliseconds>(end - start).count()) / 1000.0;
