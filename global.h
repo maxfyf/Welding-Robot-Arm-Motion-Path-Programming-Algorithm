@@ -20,6 +20,13 @@ typedef struct
 	double x, y, z;
 }Joint;
 
+typedef struct
+{
+	bool success;
+	double distance_cost;
+	double time_cost;
+}Output;
+
 void init_robot_arm(double L1, double L2, double xb, double yb, double xe1, double ze1, double xe2, double ze2);    //初始化机械臂参数
 bool check();    //检查初始化参数是否合法
 double dist2(double x1, double y1, double x2, double y2);    //计算二维距离

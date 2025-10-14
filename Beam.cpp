@@ -8,7 +8,7 @@ using namespace std;
 
 int K;    //束宽
 double W1, W2;    //启发函数中机械臂夹角与基座偏移角的权重 
-double lbound, ubound;    //基座在x或y方向位移搜索下限与上限
+double range;    //基座在x或y方向位移搜索上下限的绝对值
 double step;    //搜索步长
 bool optimize;	//是否优化
 
@@ -31,15 +31,14 @@ double h(double x0, double y0, double x, double y, double z, double _x, double _
 	return W1 * included_angle + W2 * bias_angle;
 }
 
-BeamOutput beam_search(int k, double w1, double w2, double l, double u, double s, bool opt)
+Output beam_search(int k, double w1, double w2, double r, double s, bool opt)
 {
     auto start = chrono::high_resolution_clock::now();
 
     K = k;
     W1 = w1;
     W2 = w2;
-    lbound = l;
-    ubound = u;
+    range = r;
     step = s;
     optimize = opt;
 
@@ -106,8 +105,8 @@ BeamOutput beam_search(int k, double w1, double w2, double l, double u, double s
         for (int j = 0; j < size; j++)
         {
             int indice = tree_index[j];
-            for (dx = lbound; dx <= ubound; dx += step)
-                for (dy = lbound; dy <= ubound; dy += step)
+            for (dx = -r; dx <= r; dx += step)
+                for (dy = -r; dy <= r; dy += step)
                 {
                     new_x0.push_back(x0[j] + dx);
                     new_y0.push_back(y0[j] + dy);

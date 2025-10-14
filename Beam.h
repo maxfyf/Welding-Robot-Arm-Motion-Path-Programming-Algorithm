@@ -14,13 +14,6 @@ extern bool optimize;	//是否优化
 extern vector<Base> base_path;    //基座路径
 extern vector<Joint> joint_path;    //关节路径
 
-typedef struct
-{
-	bool success;
-	double distance_cost;
-	double time_cost;
-}BeamOutput;
-
-BeamOutput beam_search(int k, double w1, double w2, double l, double u, double s, bool opt);    //Beam Search算法
+Output beam_search(int k, double w1, double w2, double r, double s, bool opt);    //Beam Search算法
 
 #endif
