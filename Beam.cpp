@@ -125,7 +125,7 @@ Output beam_search(int k, double w, double r, double s, bool opt)
                     g.push_back(c[j] + dist2(new_x0.back(), new_y0.back(), x0[j], y0[j]) + dist3(new_x.back(), new_y.back(), new_z.back(), x[j], y[j], z[j]));
                     if (beam_optimize)
                     {
-                        f.push_back(g.back() + h(new_x0.back(), new_y0.back(), new_x.back(), new_y.back(), new_z.back(), _x, _z));
+                        f.push_back(g.back() + h(new_x0.back(), new_y0.back()));
                         temp.push_back(f.back());
                     }
                     else temp.push_back(g.back());
