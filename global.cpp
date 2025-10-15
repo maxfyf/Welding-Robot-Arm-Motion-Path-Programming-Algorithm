@@ -63,26 +63,3 @@ bool calculate_joint_position(double x0, double y0, double _x, double _z, double
 	y = s0 / s * y0;    //关节y坐标
 	return true;
 }
-
-double calculate_included_angle(double x0, double y0, double x, double y, double z, double _x, double _z)
-{
-	double v1_x = x0 - x;
-	double v1_y = y0 - y;
-	double v1_z = -z;
-	double v2_x = _x - x;
-	double v2_y = -y;
-	double v2_z = _z - z;
-	double dot_product = v1_x * v2_x + v1_y * v2_y + v1_z * v2_z;
-	double magnitude_v1 = sqrt(v1_x * v1_x + v1_y * v1_y + v1_z * v1_z);
-	double magnitude_v2 = sqrt(v2_x * v2_x + v2_y * v2_y + v2_z * v2_z);
-	double cosine_angle = dot_product / (magnitude_v1 * magnitude_v2);
-	if (cosine_angle >= 0) return acos(cosine_angle);
-	else return PI - acos(-cosine_angle);
-}
-
-double calculate_bias_angle(double x0, double y0, double _x)
-{
-	double dx = abs(_x - x0);
-	double dy = abs(y0);
-	return atan2(dx, dy);
-}

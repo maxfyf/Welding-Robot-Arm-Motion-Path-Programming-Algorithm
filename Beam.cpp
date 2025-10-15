@@ -7,7 +7,7 @@
 using namespace std;
 
 int K;    //束宽
-double W1, W2;    //启发函数中机械臂夹角与基座偏移角的权重 
+double BEAM_W;    //启发项权重 
 double range;    //基座在x或y方向位移搜索上下限的绝对值
 double beam_step;    //搜索步长
 bool beam_optimize;	//是否优化
@@ -17,6 +17,7 @@ vector<Joint> beam_joint_path;    //关节路径
 
 int n;    //离散化小线段数
 int v;    //单次搜索空间大小
+double x_target, y_target;    //目标基座坐标
 
 typedef struct
 {
@@ -24,26 +25,26 @@ typedef struct
     int parent_indice;
 }Node;    //搜索树上结点
 
-double h(double x0, double y0, double x, double y, double z, double _x, double _z)
+double h(double x0, double y0)
 {
-	double included_angle = calculate_included_angle(x0, y0, x, y, z, _x, _z);
-	double bias_angle = calculate_bias_angle(x0, y0, _x);
-	return W1 * included_angle + W2 * bias_angle;
+	return BEAM_W * (dist2(x0, y0, x_target, y_target));
 }
 
-Output beam_search(int k, double w1, double w2, double r, double s, bool opt)
+Output beam_search(int k, double w, double r, double s, bool opt)
 {
     auto start = chrono::high_resolution_clock::now();
 
     K = k;
-    W1 = w1;
-    W2 = w2;
+    BEAM_W = w;
     range = r;
     beam_step = s;
     beam_optimize = opt;
 
     n = ((int)(abs(x_e1 - x_e2) / range))*ITER_RATIO;
 	v = (int)(2 * range / beam_step + 1) * (int)(2 * range / beam_step + 1);
+    double R = sqrt((l1 + l2) * (l1 + l2) - z_e2 * z_e2);
+    x_target = x_e2;
+	y_target = RATIO * R;
 
     int size = 1;    //可能性空间大小
     double _x = x_e1, _z = z_e1;    //焊点实时坐标

@@ -35,7 +35,5 @@ double dist2(double x1, double y1, double x2, double y2);    //计算二维距�
 double dist3(double x1, double y1, double z1, double x2, double y2, double z2);    //计算三维距离
 double max(double a, double b);    //返回较大值
 bool calculate_joint_position(double x0, double y0, double _x, double _z, double& x, double& y, double& z);    //根据基座位置与末端位置计算关节位置
-double calculate_included_angle(double x0, double y0, double x, double y, double z, double _x, double _z);    //计算机械臂夹角
-double calculate_bias_angle(double x0, double y0, double _x);    //计算基座偏转角
 
 #endif

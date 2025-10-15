@@ -33,7 +33,7 @@ void print_beam_time_cost(Output& beam_output)
 int main()
 {
 	set_robot_arm(3, 3, 0, 1, 0, 1, 2, 2);
-	Output beam_output = beam_search(50, 0.04, 0.02, 0.1, 0.01, false);
+	Output beam_output = beam_search(50, 1, 0.1, 0.01, false);
 	print_beam_base_path();
 	print_beam_joint_path();
 	print_beam_distance_cost(beam_output);
