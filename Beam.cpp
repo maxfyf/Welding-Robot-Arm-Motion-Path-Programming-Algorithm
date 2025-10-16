@@ -15,7 +15,7 @@ bool beam_optimize;	//是否优化
 vector<Base> beam_base_path;    //基座路径
 vector<Joint> beam_joint_path;    //关节路径
 
-int n;    //离散化小线段数
+int beam_n;    //离散化小线段数
 int v;    //单次搜索空间大小
 double x_target, y_target;    //目标基座坐标
 
@@ -27,7 +27,7 @@ typedef struct
 
 double h(double x0, double y0)
 {
-	return BEAM_W * (dist2(x0, y0, x_target, y_target));
+	return BEAM_W * dist2(x0, y0, x_target, y_target);
 }
 
 Output beam_search(int k, double w, double r, double s, bool opt)
@@ -40,11 +40,14 @@ Output beam_search(int k, double w, double r, double s, bool opt)
     beam_step = s;
     beam_optimize = opt;
 
-    n = ((int)(abs(x_e1 - x_e2) / range))*ITER_RATIO;
+    beam_n = ((int)(abs(x_e1 - x_e2) / range)) * ITER_RATIO;
 	v = (int)(2 * range / beam_step + 1) * (int)(2 * range / beam_step + 1);
     double R = sqrt((l1 + l2) * (l1 + l2) - z_e2 * z_e2);
     x_target = x_e2;
 	y_target = RATIO * R;
+
+    beam_base_path.reserve(beam_n);
+	beam_joint_path.reserve(beam_n);
 
     int size = 1;    //可能性空间大小
     double _x = x_e1, _z = z_e1;    //焊点实时坐标
@@ -81,8 +84,8 @@ Output beam_search(int k, double w, double r, double s, bool opt)
 		tree_index.push_back(-1);
     }
 
-	double delta_x = (x_e2 - x_e1) / n;    //焊点x方向增量
-	double delta_z = (z_e2 - z_e1) / n;    //焊点y方向增量
+	double delta_x = (x_e2 - x_e1) / beam_n;    //焊点x方向增量
+	double delta_z = (z_e2 - z_e1) / beam_n;    //焊点y方向增量
     double dx;
     double dy;
 	vector<double> new_x0, new_y0, new_x, new_y, new_z;
@@ -98,7 +101,7 @@ Output beam_search(int k, double w, double r, double s, bool opt)
     temp.reserve(K * v);
     parent.reserve(K * v);
 
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < beam_n; i++)
     {
         _x += delta_x;
         _z += delta_z;
@@ -188,6 +191,7 @@ Output beam_search(int k, double w, double r, double s, bool opt)
             min = c[i];
         }
     vector<int> index_path;
+    index_path.reserve(beam_n);
     index_path.push_back(tree_index[indice]);
 	while (tree[index_path.back()].parent_indice != -1)
 		index_path.push_back(tree[index_path.back()].parent_indice);

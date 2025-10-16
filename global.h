@@ -24,6 +24,11 @@ typedef struct
 
 typedef struct
 {
+	double x, y, z;
+}End;
+
+typedef struct
+{
 	bool success;
 	double distance_cost;
 	double time_cost;
