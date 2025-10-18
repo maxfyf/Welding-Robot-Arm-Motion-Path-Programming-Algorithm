@@ -1,4 +1,5 @@
 ﻿#include "global.h"
+#include <new>
 #include <vector>
 #include <map>
 #include <unordered_set>
@@ -27,12 +28,14 @@ double neighbor_range;    //邻域半径
 
 typedef struct Node
 {
-	double x, y, z;
+	double x;
+	double y;
+	double z;
 	double g;    //代价
 	double f;    //代价+启发项
 	struct Node* parent;
 }Node;    //搜索树上结点
-vector<Node> tree;    //搜索树
+vector<Node*> tree;    //搜索树
 multimap<Node*, Node*> adjlist;    //邻接表
 multimap<double, Node*> openlist;    //开放列表
 unordered_set<Node*> closedlist;    //封闭列表
@@ -67,7 +70,7 @@ multimap<double, Node*>::iterator in_openlist(Node* ptr)
 
 Node* route_search()
 {
-	Node* ptr = &tree[0];
+	Node* ptr = tree[0];
 	openlist.insert(make_pair(heuristic_optimize ? ptr->f : ptr->g, ptr));
 	while(!openlist.empty())
 	{
@@ -131,7 +134,8 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 	rrt_joint_path.reserve(rrt_n);
 	rrt_end_path.reserve(rrt_n);
 
-	tree.push_back({ x_e1, 0, z_e1, relaxation_optimize ? 0 : 1e9, heuristic_optimize ? dist2(x_e1, z_e1, x_e2, z_e2) : 1e9, NULL});
+	Node* p = new Node({ x_e1, 0, z_e1, relaxation_optimize ? 0 : MAX_DBL, heuristic_optimize ? dist2(x_e1, z_e1, x_e2, z_e2) : MAX_DBL, NULL });
+	tree.push_back(p);
 	random_device rd;
 	mt19937 gen(rd());
 	double cnt = goal_bias;
@@ -155,18 +159,13 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 		}
 		if(!relaxation_optimize)
 		{
-			Node* ptr = NULL;
-			double min = 1e9;
-			for (auto it = tree.begin(); it != tree.end(); it++)
+			Node* ptr = tree[0];
+			double min = dist3(ptr->x, ptr->y, ptr->z, x_dir, y_dir, z_dir);
+			for (int i = 0; i < tree.size(); i++)
 			{
-				if (ptr == NULL)
+				if (dist3(tree[i] -> x, tree[i] -> y, tree[i] -> z, x_dir, y_dir, z_dir) < min)
 				{
-					ptr = &(*it);
-					min = dist3(ptr->x, ptr->y, ptr->z, x_dir, y_dir, z_dir);
-				}
-				else if (dist3(it->x, it->y, it->z, x_dir, y_dir, z_dir) < min)
-				{
-					ptr = &(*it);
+					ptr = tree[i];
 					min = dist3(ptr->x, ptr->y, ptr->z, x_dir, y_dir, z_dir);
 				}
 			}
@@ -176,10 +175,12 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 				y_dir = ptr->y + (y_dir - ptr->y) * step / min;
 				z_dir = ptr->z + (z_dir - ptr->z) * step / min;
 			}
-			tree.push_back({ x_dir, y_dir, z_dir, 1e9, 1e9, ptr });
+			p = new Node({ x_dir, y_dir, z_dir, MAX_DBL, MAX_DBL, ptr });
+			tree.push_back(p);
 			if (dist3(x_dir, y_dir, z_dir, x_e2, 0, z_e2) < step)
 			{
-				tree.push_back({ x_e2, 0, z_e2, 1e9, 1e9, &tree.back() });
+				p = new Node({ x_e2, 0, z_e2, MAX_DBL, MAX_DBL, tree.back() });
+				tree.push_back(p);
 				break;
 			}
 		}
@@ -187,20 +188,20 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 		{
 			vector<Node*> neighbors;
 			Node* ptr = NULL;
-			double min = 1e9;
+			double min = MAX_DBL;
 			for (auto it = tree.begin(); it != tree.end(); it++)
 			{
-				double dist = dist3(it->x, it->y, it->z, x_dir, y_dir, z_dir);
+				double dist = dist3((*it)->x, (*it)->y, (*it)->z, x_dir, y_dir, z_dir);
 				if (dist <= neighbor_range)
-					neighbors.push_back(&(*it));
+					neighbors.push_back(*it);
 				if (ptr == NULL)
 				{
-					ptr = &(*it);
+					ptr = *it;
 					min = dist;
 				}
 				else if (dist < min)
 				{
-					ptr = &(*it);
+					ptr = *it;
 					min = dist;
 				}
 			}
@@ -209,9 +210,10 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 				x_dir = ptr->x + (x_dir - ptr->x) * step / min;
 				y_dir = ptr->y + (y_dir - ptr->y) * step / min;
 				z_dir = ptr->z + (z_dir - ptr->z) * step / min;
-				tree.push_back({ x_dir, y_dir, z_dir, 1e9, 1e9, NULL});
-				adjlist.insert(make_pair(ptr, &tree.back()));
-				adjlist.insert(make_pair(&tree.back(), ptr));
+				p = new Node({ x_dir, y_dir, z_dir, MAX_DBL, MAX_DBL, NULL });
+				tree.push_back(p);
+				adjlist.insert(make_pair(ptr, tree.back()));
+				adjlist.insert(make_pair(tree.back(), ptr));
 			}
 			else
 			{
@@ -220,21 +222,23 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 					if (terminal_index == -1)
 					{
 						terminal_index = (int)tree.size();
-						tree.push_back({ x_dir, y_dir, z_dir, 1e9, 1e9, NULL });
+						p = new Node({ x_dir, y_dir, z_dir, MAX_DBL, MAX_DBL, NULL });
+						tree.push_back(p);
 					}
 					for (i = 0; i < neighbors.size(); i++)
 					{
-						adjlist.insert(make_pair(neighbors[i], &tree[terminal_index]));
-						adjlist.insert(make_pair(&tree[terminal_index], neighbors[i]));
+						adjlist.insert(make_pair(neighbors[i], tree[terminal_index]));
+						adjlist.insert(make_pair(tree[terminal_index], neighbors[i]));
 					}
 				}
 				else
 				{
-					tree.push_back({ x_dir, y_dir, z_dir, 1e9, 1e9, NULL });
+					p = new Node({ x_dir, y_dir, z_dir, MAX_DBL, MAX_DBL, NULL });
+					tree.push_back(p);
 					for (i = 0; i < neighbors.size(); i++)
 					{
-						adjlist.insert(make_pair(neighbors[i], &tree.back()));
-						adjlist.insert(make_pair(&tree.back(), neighbors[i]));
+						adjlist.insert(make_pair(neighbors[i], tree.back()));
+						adjlist.insert(make_pair(tree.back(), neighbors[i]));
 					}
 				}
 			}
@@ -245,13 +249,13 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 	Node* ptr;
 	if (!relaxation_optimize)
 	{
-		if (tree.back().x != x_e2 || tree.back().y != 0 || tree.back().z != z_e2)
+		if (tree.back() -> x != x_e2 || tree.back() -> y != 0 || tree.back() -> z != z_e2)
 		{
 			auto end = std::chrono::high_resolution_clock::now();
 			double t = (chrono::duration_cast<chrono::milliseconds>(end - start).count()) / 1000.0;
-			return { false, 1e9, t };
+			return { false, MAX_DBL, t };
 		}
-		ptr = &tree.back();
+		ptr = tree.back();
 	}
 	else
 	{
@@ -259,7 +263,7 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 		{
 			auto end = std::chrono::high_resolution_clock::now();
 			double t = (chrono::duration_cast<chrono::milliseconds>(end - start).count()) / 1000.0;
-			return { false, 1e9, t };
+			return { false, MAX_DBL, t };
 		}
 	}
 

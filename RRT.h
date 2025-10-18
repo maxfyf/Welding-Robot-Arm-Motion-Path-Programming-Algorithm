@@ -18,4 +18,6 @@ extern vector<Base> rrt_base_path;    //基座路径
 extern vector<Joint> rrt_joint_path;    //关节路径
 extern vector<End> rrt_end_path;    //末端路径
 
+Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt, bool r_opt, bool h_opt);    //RRT算法
+
 #endif

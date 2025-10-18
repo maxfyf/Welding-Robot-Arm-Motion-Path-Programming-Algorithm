@@ -1,5 +1,7 @@
 ﻿#ifndef GLOBAL_H
 #define GLOBAL_H
+#include <limits>
+#define MAX_DBL std::numeric_limits<double>::max()
 #define PI 3.1415926
 #define ITER_RATIO 10    //迭代次数与最少次数的比值
 
@@ -14,17 +16,22 @@ extern double x_e2, z_e2;    //末端终点坐标
 
 typedef struct
 {
-	double x, y;
+	double x;
+	double y;
 }Base;
 
 typedef struct
 {
-	double x, y, z;
+	double x;
+	double y;
+	double z;
 }Joint;
 
 typedef struct
 {
-	double x, y, z;
+	double x;
+	double y;
+	double z;
 }End;
 
 typedef struct

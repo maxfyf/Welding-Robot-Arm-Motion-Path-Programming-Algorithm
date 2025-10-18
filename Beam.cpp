@@ -21,7 +21,8 @@ double x_target, y_target;    //目标基座坐标
 
 typedef struct
 {
-    double x0, y0;
+    double x0;
+    double y0;
     int parent_indice;
 }Node;    //搜索树上结点
 
@@ -80,7 +81,7 @@ Output beam_search(int k, double w, double r, double s, bool opt)
 		x.push_back(0);
         y.push_back(0);
 		z.push_back(0);
-		c.push_back(1e9);
+		c.push_back(MAX_DBL);
 		tree_index.push_back(-1);
     }
 
