@@ -1,4 +1,6 @@
 ﻿#include "global.h"
+#include "rrt.h"
+#include "beam.h"
 #include <new>
 #include <vector>
 #include <map>
@@ -35,10 +37,35 @@ typedef struct Node
 	double f;    //代价+启发项
 	struct Node* parent;
 }Node;    //搜索树上结点
-vector<Node*> tree;    //搜索树
-multimap<Node*, Node*> adjlist;    //邻接表
-multimap<double, Node*> openlist;    //开放列表
-unordered_set<Node*> closedlist;    //封闭列表
+static vector<Node*> tree;    //搜索树
+static multimap<Node*, Node*> adjlist;    //邻接表
+static multimap<double, Node*> openlist;    //开放列表
+static unordered_set<Node*> closedlist;    //封闭列表
+
+void rrt_config(double sr, double gb, double nrr, double stdr, double w, bool gb_opt, bool r_opt, bool h_opt)
+{
+	rrt_step_ratio = sr;
+	goal_bias = gb;
+	neighbor_range_ratio = nrr;
+	std_ratio = stdr;
+	RRT_W = w;
+	goal_bias_optimize = gb_opt;
+	relaxation_optimize = r_opt;
+	heuristic_optimize = h_opt && r_opt;
+}
+
+void reset_rrt()
+{
+	rrt_base_path.clear();
+	rrt_joint_path.clear();
+	rrt_end_path.clear();
+	for (int i = 0; i < tree.size(); i++)
+		delete tree[i];
+	tree.clear();
+	adjlist.clear();
+	openlist.clear();
+	closedlist.clear();
+}
 
 void generate_random_point(double _x, double _z, mt19937& gen, double& x, double& y, double& z)
 {
@@ -54,6 +81,13 @@ void generate_random_point(double _x, double _z, mt19937& gen, double& x, double
 	x = _x + r * cos(phi) * cos(theta);
 	y = r * cos(phi) * sin(theta);
 	z = r * sin(phi);
+}
+
+//检查随机点是否在障碍物中
+bool check_pos(double x, double y, double z)
+{
+	if (y <= 0 || z <= 0) return false;
+	else return true;
 }
 
 multimap<double, Node*>::iterator in_openlist(Node* ptr)
@@ -113,18 +147,10 @@ Node* route_search()
 	return NULL;
 }
 
-Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt, bool r_opt, bool h_opt)
+RRT_Output RRT_search()
 {
 	auto start = chrono::high_resolution_clock::now();
 
-	rrt_step_ratio = sr;
-	goal_bias = gb;
-	neighbor_range_ratio = nrr;
-	std_ratio = stdr;
-	RRT_W = w;
-	goal_bias_optimize = gb_opt;
-	relaxation_optimize = r_opt;
-	heuristic_optimize = h_opt && r_opt;
 	std_dev = std_ratio * dist2(x_e1, z_e1, x_e2, z_e2);
 	rrt_n = ((int)(dist2(x_e1, z_e1, x_e2, z_e2) / rrt_step_ratio)) * ITER_RATIO;
 	step = rrt_step_ratio * dist2(x_e1, z_e1, x_e2, z_e2);
@@ -155,6 +181,7 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 		else
 		{
 			generate_random_point(x_e2, z_e2, gen, x_dir, y_dir, z_dir);
+			while (!check_pos(x_dir, y_dir, z_dir)) generate_random_point(x_e2, z_e2, gen, x_dir, y_dir, z_dir);
 			cnt += goal_bias;
 		}
 		if(!relaxation_optimize)
@@ -174,6 +201,11 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 				x_dir = ptr->x + (x_dir - ptr->x) * step / min;
 				y_dir = ptr->y + (y_dir - ptr->y) * step / min;
 				z_dir = ptr->z + (z_dir - ptr->z) * step / min;
+				if (!check_pos(x_dir, y_dir, z_dir))
+				{
+					cnt -= goal_bias;
+					continue;
+				}
 			}
 			p = new Node({ x_dir, y_dir, z_dir, MAX_DBL, MAX_DBL, ptr });
 			tree.push_back(p);
@@ -210,6 +242,11 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 				x_dir = ptr->x + (x_dir - ptr->x) * step / min;
 				y_dir = ptr->y + (y_dir - ptr->y) * step / min;
 				z_dir = ptr->z + (z_dir - ptr->z) * step / min;
+				if (!check_pos(x_dir, y_dir, z_dir))
+				{
+					cnt -= goal_bias;
+					continue;
+				}
 				p = new Node({ x_dir, y_dir, z_dir, MAX_DBL, MAX_DBL, NULL });
 				tree.push_back(p);
 				adjlist.insert(make_pair(ptr, tree.back()));
@@ -278,15 +315,27 @@ Output RRT(double sr, double gb, double nrr, double stdr, double w, bool gb_opt,
 		ptr = ptr->parent;
 	}
 	temp.push_back(ptr);
-	int sz = (int)temp.size();
-	for (int i = sz - 1; i >= 0; i--)
-	{
-		rrt_end_path.push_back({ temp[i]->x, temp[i]->y, temp[i]->z });
-		if (!relaxation_optimize && i < sz - 1)
-			l += dist3(temp[i]->x, temp[i]->y, temp[i]->z, temp[i + 1]->x, temp[i + 1]->y, temp[i + 1]->z);
-	}
 
 	auto end = std::chrono::high_resolution_clock::now();
 	double t = (chrono::duration_cast<chrono::milliseconds>(end - start).count()) / 1000.0;
-	return { true, l, t };
+
+	int sz = (int)temp.size();
+	double sum = 0;
+	for (int i = sz - 1; i >= 0; i--)
+	{
+		rrt_end_path.push_back({ temp[i]->x, temp[i]->y, temp[i]->z });
+		if (i < sz - 1)
+		{
+			if(!relaxation_optimize) l += dist3(temp[i]->x, temp[i]->y, temp[i]->z, temp[i + 1]->x, temp[i + 1]->y, temp[i + 1]->z);
+			sum += _beam_search(temp[i + 1]->x, temp[i + 1]->y, temp[i + 1]->z, temp[i]->x, temp[i]->y, temp[i]->z).distance_cost;
+			for (int j = 0; j < beam_base_path.size() - (i != 0); j++)
+			{
+				rrt_base_path.push_back(beam_base_path[j]);
+				rrt_joint_path.push_back(beam_joint_path[j]);
+			}
+			reset_beam();
+			update_base_position();
+		}
+	}
+	return { true, l, sum, t };
 }

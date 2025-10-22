@@ -1,5 +1,6 @@
 ﻿#include "global.h"
 #include "Beam.h"
+#include <new>
 #include <vector>
 #include <unordered_set>
 #include <algorithm>
@@ -25,71 +26,83 @@ typedef struct
     double y0;
     int parent_indice;
 }Node;    //搜索树上结点
+static vector<Node*> tree;    //搜索树
+static vector<int> tree_index;
+
+void beam_config(int k, double w, double r, double s, bool opt)
+{
+    K = k;
+    BEAM_W = w;
+    range = r;
+    beam_step = s;
+    beam_optimize = opt;
+}
+
+void reset_beam()
+{
+	beam_base_path.clear();
+	beam_joint_path.clear();
+    for (int i = 0; i < tree.size(); i++)
+        delete tree[i];
+    tree.clear();
+    tree_index.clear();
+}
 
 double h(double x0, double y0)
 {
 	return BEAM_W * dist2(x0, y0, x_target, y_target);
 }
 
-Output beam_search(int k, double w, double r, double s, bool opt)
+Beam_Output _beam_search(double x1, double y1, double z1, double x2, double y2, double z2)
 {
-    auto start = chrono::high_resolution_clock::now();
-
-    K = k;
-    BEAM_W = w;
-    range = r;
-    beam_step = s;
-    beam_optimize = opt;
-
-    beam_n = ((int)(abs(x_e1 - x_e2) / range)) * ITER_RATIO;
-	v = (int)(2 * range / beam_step + 1) * (int)(2 * range / beam_step + 1);
-    double R = sqrt((l1 + l2) * (l1 + l2) - z_e2 * z_e2);
-    x_target = x_e2;
-	y_target = RATIO * R;
+    beam_n = ((int)(max(abs(x1 - x2), abs(y1 - y2)) / range)) * ITER_RATIO;
+    v = (int)(2 * range / beam_step + 1) * (int)(2 * range / beam_step + 1);
+    double R = sqrt((l1 + l2) * (l1 + l2) - z2 * z2);
+    x_target = x2;
+    y_target = RATIO * R + y2;
 
     beam_base_path.reserve(beam_n);
-	beam_joint_path.reserve(beam_n);
+    beam_joint_path.reserve(beam_n);
 
     int size = 1;    //可能性空间大小
-    double _x = x_e1, _z = z_e1;    //焊点实时坐标
-	vector<double> x0, y0;    //基座实时坐标
+    double _x = x1, _y = y1, _z = z1;    //焊点实时坐标
+    vector<double> x0, y0;    //基座实时坐标
     vector<double> x, y, z;    //关节实时坐标
-	vector<double> c;    //c为代价函数
-    vector<Node> tree;    //搜索树
-    vector<int> tree_index;
+    vector<double> c;    //c为代价函数
     x0.reserve(K);
     y0.reserve(K);
-	x.reserve(K);
-	y.reserve(K);
-	z.reserve(K);
-	c.reserve(K);
-	tree_index.reserve(K);
+    x.reserve(K);
+    y.reserve(K);
+    z.reserve(K);
+    c.reserve(K);
+    tree_index.reserve(K);
     x0.push_back(x_b1);
     y0.push_back(y_b1);
     c.push_back(0);
-	Node head = { x0[0], y0[0], -1 };
-	tree.push_back(head);
+    Node* head = new Node({ x0[0], y0[0], -1 });
+    tree.push_back(head);
     tree_index.push_back(0);
     x.push_back(0);
     y.push_back(0);
-	z.push_back(0);
-    calculate_joint_position(x0[0], y0[0], _x, _z, x[0], y[0], z[0]);
+    z.push_back(0);
+    calculate_joint_position(x0[0], y0[0], _x, _y, _z, x[0], y[0], z[0]);
     for (int i = 1; i < K; i++)
     {
         x0.push_back(0);
         y0.push_back(0);
-		x.push_back(0);
+        x.push_back(0);
         y.push_back(0);
-		z.push_back(0);
-		c.push_back(MAX_DBL);
-		tree_index.push_back(-1);
+        z.push_back(0);
+        c.push_back(MAX_DBL);
+        tree_index.push_back(-1);
     }
 
-	double delta_x = (x_e2 - x_e1) / beam_n;    //焊点x方向增量
-	double delta_z = (z_e2 - z_e1) / beam_n;    //焊点y方向增量
+    double delta_x = (x2 - x1) / beam_n;    //焊点x方向增量
+	double delta_y = (y2 - y1) / beam_n;    //焊点y方向增量
+    double delta_z = (z2 - z1) / beam_n;    //焊点z方向增量
     double dx;
     double dy;
-	vector<double> new_x0, new_y0, new_x, new_y, new_z;
+    vector<double> new_x0, new_y0, new_x, new_y, new_z;
     vector<double> g, f, temp;
     vector<int> parent;
     new_x0.reserve(K * v);
@@ -98,7 +111,7 @@ Output beam_search(int k, double w, double r, double s, bool opt)
     new_y.reserve(K * v);
     new_z.reserve(K * v);
     g.reserve(K * v);
-	f.reserve(K * v);
+    f.reserve(K * v);
     temp.reserve(K * v);
     parent.reserve(K * v);
 
@@ -109,15 +122,15 @@ Output beam_search(int k, double w, double r, double s, bool opt)
         for (int j = 0; j < size; j++)
         {
             int indice = tree_index[j];
-            for (dx = -r; dx <= r; dx += beam_step)
-                for (dy = -r; dy <= r; dy += beam_step)
+            for (dx = -range; dx <= range; dx += beam_step)
+                for (dy = -range; dy <= range; dy += beam_step)
                 {
                     new_x0.push_back(x0[j] + dx);
                     new_y0.push_back(y0[j] + dy);
                     new_x.push_back(0);
                     new_y.push_back(0);
                     new_z.push_back(0);
-                    if (new_y.back() < 0 || !calculate_joint_position(new_x0.back(), new_y0.back(), _x, _z, new_x.back(), new_y.back(), new_z.back()) || new_y0.back() < 0)    //碰撞检查
+                    if (new_y.back() < 0 || !calculate_joint_position(new_x0.back(), new_y0.back(), _x, _y, _z, new_x.back(), new_y.back(), new_z.back()) || new_y0.back() < 0)    //碰撞检查
                     {
                         new_x0.pop_back();
                         new_y0.pop_back();
@@ -136,7 +149,7 @@ Output beam_search(int k, double w, double r, double s, bool opt)
                     parent.push_back(indice);
                 }
         }
-		size = g.size() > K ? K : (int)g.size();
+        size = g.size() > K ? K : (int)g.size();
         if (size == K)
         {
             nth_element(temp.begin(), temp.begin() + size - 1, temp.end());
@@ -152,7 +165,8 @@ Output beam_search(int k, double w, double r, double s, bool opt)
                     z[cnt] = new_z[j];
                     c[cnt] = g[j];
                     tree_index[cnt] = (int)tree.size();
-					tree.push_back({ x0[cnt], y0[cnt], parent[j] });
+                    Node* node = new Node({ x0[cnt], y0[cnt], parent[j] });
+                    tree.push_back(node);
                     cnt++;
                 }
             size = cnt;
@@ -168,15 +182,16 @@ Output beam_search(int k, double w, double r, double s, bool opt)
                 z[j] = new_z[j];
                 c[j] = g[j];
                 tree_index[j] = (int)tree.size();
-                tree.push_back({ x0[j], y0[j], parent[j] });
+                Node* node = new Node({ x0[j], y0[j], parent[j] });
+                tree.push_back(node);
             }
         }
-		new_x0.clear();
-		new_y0.clear();
-		new_x.clear();
-		new_y.clear();
-		new_z.clear();
-		g.clear();
+        new_x0.clear();
+        new_y0.clear();
+        new_x.clear();
+        new_y.clear();
+        new_z.clear();
+        g.clear();
         f.clear();
         temp.clear();
         parent.clear();
@@ -194,20 +209,29 @@ Output beam_search(int k, double w, double r, double s, bool opt)
     vector<int> index_path;
     index_path.reserve(beam_n);
     index_path.push_back(tree_index[indice]);
-	while (tree[index_path.back()].parent_indice != -1)
-		index_path.push_back(tree[index_path.back()].parent_indice);
+    while (tree[index_path.back()]->parent_indice != -1)
+        index_path.push_back(tree[index_path.back()]->parent_indice);
     for (int i = (int)index_path.size() - 1; i >= 0; i--)
     {
-        beam_base_path.push_back({ tree[index_path[i]].x0, tree[index_path[i]].y0 });
+        beam_base_path.push_back({ tree[index_path[i]]->x0, tree[index_path[i]]->y0 });
         double x_f, y_f, z_f;
-		calculate_joint_position(tree[index_path[i]].x0, tree[index_path[i]].y0, x_e1 + (x_e2 - x_e1) * (index_path.size() - 1 - i) / (index_path.size() - 1), z_e1 + (z_e2 - z_e1) * (index_path.size() - 1 - i) / (index_path.size() - 1), x_f, y_f, z_f);
-		beam_joint_path.push_back({ x_f, y_f, z_f });
+        calculate_joint_position(tree[index_path[i]]->x0, tree[index_path[i]]->y0, x1 + (x2 - x1) * (index_path.size() - 1 - i) / (index_path.size() - 1), y1 + (y2 - y1) * (index_path.size() - 1 - i) / (index_path.size() - 1), z1 + (z2 - z1) * (index_path.size() - 1 - i) / (index_path.size() - 1), x_f, y_f, z_f);
+        beam_joint_path.push_back({ x_f, y_f, z_f });
     }
-	x_b2 = beam_base_path.back().x;
-	y_b2 = beam_base_path.back().y;
+    x_b2 = beam_base_path.back().x;
+    y_b2 = beam_base_path.back().y;
+
+    return { true, min, 0 };
+}
+
+Beam_Output beam_search()
+{
+    auto start = chrono::high_resolution_clock::now();
+
+	Beam_Output output = _beam_search(x_e1, 0, z_e1, x_e2, 0, z_e2);
 
     auto end = std::chrono::high_resolution_clock::now();
     double t = (chrono::duration_cast<chrono::milliseconds>(end - start).count()) / 1000.0;
 
-    return {true, min, t};
+    return {output.success, output.distance_cost, t};
 }

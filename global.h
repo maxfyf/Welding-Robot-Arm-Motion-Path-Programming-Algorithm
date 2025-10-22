@@ -34,18 +34,15 @@ typedef struct
 	double z;
 }End;
 
-typedef struct
-{
-	bool success;
-	double distance_cost;
-	double time_cost;
-}Output;
-
-void set_robot_arm(double L1, double L2, double xb, double yb, double xe1, double ze1, double xe2, double ze2);    //初始化机械臂参数
+void init_robot_arm(double L1, double L2);    //初始化机械臂参数
+void set_base_position(double xb, double yb);    //设置基座起点位置
+void update_base_position();    //更新基座起点位置为上一次搜索得到的基座终点位置
+void set_end_position(double xe1, double ze1, double xe2, double ze2);    //设置末端起点与终点位置
+void update_end_position(double xe, double ze);    //更新末端起点位置为上一次搜索得到的末端终点位置,并设置新的末端终点位置
 bool check();    //检查初始化参数是否合法
 double dist2(double x1, double y1, double x2, double y2);    //计算二维距离
 double dist3(double x1, double y1, double z1, double x2, double y2, double z2);    //计算三维距离
 double max(double a, double b);    //返回较大值
-bool calculate_joint_position(double x0, double y0, double _x, double _z, double& x, double& y, double& z);    //根据基座位置与末端位置计算关节位置
+bool calculate_joint_position(double x0, double y0, double _x, double _y, double _z, double& x, double& y, double& z);    //根据基座位置与末端位置计算关节位置
 
 #endif
