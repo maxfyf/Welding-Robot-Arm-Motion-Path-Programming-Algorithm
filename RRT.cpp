@@ -321,13 +321,16 @@ RRT_Output RRT_search()
 
 	int sz = (int)temp.size();
 	double sum = 0;
+	Beam_Output beam_output;
 	for (int i = sz - 1; i >= 0; i--)
 	{
 		rrt_end_path.push_back({ temp[i]->x, temp[i]->y, temp[i]->z });
 		if (i < sz - 1)
 		{
 			if(!relaxation_optimize) l += dist3(temp[i]->x, temp[i]->y, temp[i]->z, temp[i + 1]->x, temp[i + 1]->y, temp[i + 1]->z);
-			sum += _beam_search(temp[i + 1]->x, temp[i + 1]->y, temp[i + 1]->z, temp[i]->x, temp[i]->y, temp[i]->z).distance_cost;
+			beam_output = _beam_search(temp[i + 1]->x, temp[i + 1]->y, temp[i + 1]->z, temp[i]->x, temp[i]->y, temp[i]->z);
+			if (!beam_output.success) return { false, 0, MAX_DBL, t };
+			sum += beam_output.distance_cost;
 			for (int j = 0; j < beam_base_path.size() - (i != 0); j++)
 			{
 				rrt_base_path.push_back(beam_base_path[j]);

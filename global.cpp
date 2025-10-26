@@ -9,6 +9,12 @@ double x_b2, y_b2;	 //基座终点坐标
 double x_e1, z_e1;    //末端起点坐标
 double x_e2, z_e2;    //末端终点坐标
 
+//备份初始化坐标
+double _xb1, _yb1;
+double _xe1, _ze1;
+double _xe2, _ze2;
+
+
 void init_robot_arm(double L1, double L2)
 {
 	l1 = L1;
@@ -17,8 +23,8 @@ void init_robot_arm(double L1, double L2)
 
 void set_base_position(double xb, double yb)
 {
-	x_b1 = xb;
-	y_b1 = yb;
+	_xb1 = x_b1 = xb;
+	_yb1 = y_b1 = yb;
 }
 
 void update_base_position()
@@ -27,13 +33,19 @@ void update_base_position()
 	y_b1 = y_b2;
 }
 
+void reset_base_position()
+{
+	x_b1 = _xb1;
+	y_b1 = _yb1;
+}
+
 void set_end_position(double xe1, double ze1, double xe2, double ze2)
 {
 
-	x_e1 = xe1;
-	z_e1 = ze1;
-	x_e2 = xe2;
-	z_e2 = ze2;
+	_xe1 = x_e1 = xe1;
+	_ze1 = z_e1 = ze1;
+	_xe2 = x_e2 = xe2;
+	_ze2 = z_e2 = ze2;
 }
 
 void update_end_position(double xe, double ze)
@@ -42,6 +54,20 @@ void update_end_position(double xe, double ze)
 	z_e1 = z_e2;
 	x_e2 = xe;
 	z_e2 = ze;
+}
+
+void reset_end_position()
+{
+	x_e1 = _xe1;
+	z_e1 = _ze1;
+	x_e2 = _xe2;
+	z_e2 = _ze2;
+}
+
+void reset_position()
+{
+	reset_base_position();
+	reset_end_position();
 }
 
 bool check()

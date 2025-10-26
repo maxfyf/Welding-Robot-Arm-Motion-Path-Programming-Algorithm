@@ -24,7 +24,7 @@ extern vector<Joint> beam_joint_path;    //关节路径
 
 void beam_config(int k, double w, double r, double s, bool opt);    //配置Beam算法参数
 void reset_beam();    //清空Beam算法除了参数以外的所有内存
-Beam_Output _beam_search(double x1, double y1, double z1, double x2, double y2, double z2);	//Beam Search算法(三维末端)
+Beam_Output _beam_search(double x1, double y1, double z1, double x2, double y2, double z2);    //Beam Search算法(三维末端)
 Beam_Output beam_search();    //Beam Search算法（二维末端）
 
 #endif

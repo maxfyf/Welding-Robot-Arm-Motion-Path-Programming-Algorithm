@@ -55,7 +55,8 @@ double h(double x0, double y0)
 
 Beam_Output _beam_search(double x1, double y1, double z1, double x2, double y2, double z2)
 {
-    beam_n = ((int)(max(abs(x1 - x2), abs(y1 - y2)) / range)) * ITER_RATIO;
+    double rr = max(abs(x1 - x2), abs(y1 - y2)) / range;
+    beam_n = ((int)(rr < 1 ? 1 : rr)) * ITER_RATIO;
     v = (int)(2 * range / beam_step + 1) * (int)(2 * range / beam_step + 1);
     double R = sqrt((l1 + l2) * (l1 + l2) - z2 * z2);
     x_target = x2;
