@@ -1,13 +1,14 @@
 ﻿#include "global.h"
 #include "Beam.h"
 #include <new>
+#include <cmath>
 #include <vector>
 #include <unordered_set>
 #include <algorithm>
 #include <chrono>
-using namespace std;
 
 int K;    //束宽
+WeightModel W_MODEL;    //权重模型
 double BEAM_W;    //启发项权重 
 double range;    //基座在x或y方向位移搜索上下限的绝对值
 double beam_step;    //搜索步长
@@ -29,10 +30,11 @@ typedef struct
 static vector<Node*> tree;    //搜索树
 static vector<int> tree_index;
 
-void beam_config(int k, double w, double r, double s, bool opt)
+void beam_config(int k, WeightModel wm, double w, double r, double s, bool opt)
 {
     K = k;
-    BEAM_W = w;
+    W_MODEL = wm;
+    if(W_MODEL == NONE) BEAM_W = w;
     range = r;
     beam_step = s;
     beam_optimize = opt;
@@ -46,6 +48,28 @@ void reset_beam()
         delete tree[i];
     tree.clear();
     tree_index.clear();
+}
+
+void update_weight(double z, double theta)
+{
+    switch (W_MODEL)
+    {
+    case Z_LINEAR:
+        BEAM_W = 0.07318707 * z - 0.02505444;
+        break;
+    case Z_EXPONENTIAL:
+        BEAM_W = 0.05498141 * exp(0.3700402 * z);
+        break;
+    case THETA_LINEAR:
+        BEAM_W = 0.12427096 * theta - 0.03097439;
+        break;
+    case THETA_LOGARITHMIC:
+        BEAM_W = 0.24801019 * log(theta) + 0.05821501;
+        if (BEAM_W < 0) BEAM_W = 0;
+        break;
+    default:
+        break;
+    }
 }
 
 double h(double x0, double y0)
@@ -119,9 +143,11 @@ Beam_Output _beam_search(double x1, double y1, double z1, double x2, double y2, 
     for (int i = 0; i < beam_n; i++)
     {
         _x += delta_x;
+		_y += delta_y;
         _z += delta_z;
         for (int j = 0; j < size; j++)
         {
+            if (W_MODEL != NONE) update_weight(_z - delta_z, calculate_angle(dist3(x0[j], y0[j], 0, _x - delta_x, _y - delta_y, _z - delta_z)));
             int indice = tree_index[j];
             for (dx = -range; dx <= range; dx += beam_step)
                 for (dy = -range; dy <= range; dy += beam_step)

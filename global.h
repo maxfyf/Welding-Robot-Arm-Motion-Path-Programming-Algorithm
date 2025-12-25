@@ -43,9 +43,11 @@ void update_end_position(double xe, double ze);    //更新末端起点位置为
 void reset_end_position();    //重置末端起点与终点位置为初始位置
 void reset_position();    //重置机械臂位置为初始位置
 bool check();    //检查初始化参数是否合法
+void set_random_case();    //设置随机测试用例
 double dist2(double x1, double y1, double x2, double y2);    //计算二维距离
 double dist3(double x1, double y1, double z1, double x2, double y2, double z2);    //计算三维距离
 double max(double a, double b);    //返回较大值
 bool calculate_joint_position(double x0, double y0, double _x, double _y, double _z, double& x, double& y, double& z);    //根据基座位置与末端位置计算关节位置
+double calculate_angle(double dist);    //计算机械臂间的夹角
 
 #endif

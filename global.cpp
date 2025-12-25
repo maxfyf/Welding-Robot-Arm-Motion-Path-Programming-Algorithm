@@ -1,11 +1,11 @@
 ﻿#include "global.h"
 #include <cmath>
-using namespace std;
+#include <random>
 
 double l1;    //基座到关节的距离
 double l2;    //关节到末端的距离
 double x_b1, y_b1;    //基座起点坐标
-double x_b2, y_b2;	 //基座终点坐标
+double x_b2, y_b2;	  //基座终点坐标
 double x_e1, z_e1;    //末端起点坐标
 double x_e2, z_e2;    //末端终点坐标
 
@@ -14,6 +14,10 @@ double _xb1, _yb1;
 double _xe1, _ze1;
 double _xe2, _ze2;
 
+//正态分布随机数生成器
+random_device rd;
+mt19937 gen(rd());
+normal_distribution<double> distribution(3.0, 1.0);
 
 void init_robot_arm(double L1, double L2)
 {
@@ -72,11 +76,24 @@ void reset_position()
 
 bool check()
 {
-	if (y_b1 < 0)
+	if (y_b1 < 0 || z_e1 < 0)
 		return false;
-	if (dist3(x_b1, y_b1, 0, x_e1, 0, z_e1) > l1 + l2)
+	if (dist3(x_b1, y_b1, 0, x_e1, 0, z_e1) > l1 + l2 - 0.5)
 		return false;
 	return true;
+}
+
+void set_random_case()
+{
+	do
+	{
+		_xb1 = x_b1 = 0;
+		_yb1 = y_b1 = distribution(gen);
+		_xe1 = x_e1 = 0;
+		_ze1 = z_e1 = distribution(gen);
+		_xe2 = x_e2 = 10;
+		_ze2 = z_e2 = distribution(gen);
+	} while (!check());
 }
 
 double dist2(double x1, double y1, double x2, double y2)
@@ -112,4 +129,11 @@ bool calculate_joint_position(double x0, double y0, double _x, double _y, double
 	x = _x + s0 / s * (x0 - _x);    //关节x坐标
 	y = s0 / s * y0 + _y;    //关节y坐标
 	return true;
+}
+
+double calculate_angle(double dist)
+{
+	double cosine = (l1 * l1 + l2 * l2 - dist * dist) / (2 * l1 * l2);
+	if(cosine >= 0) return acos(cosine);
+	else return PI - acos(-cosine);
 }

@@ -8,7 +8,6 @@
 #include <cmath>
 #include <random>
 #include <chrono>
-using namespace std;
 
 double rrt_step_ratio;    //搜索步长与起点和终点间距的比值
 double goal_bias;    //目标偏置频率
