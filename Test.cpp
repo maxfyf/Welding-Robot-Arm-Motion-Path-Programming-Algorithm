@@ -2,6 +2,6 @@
 
 int main()
 {
-	adjust_beam_weight_model();
+	adjust_rrt_neighbor_range_ratio();
     return 0;
 }

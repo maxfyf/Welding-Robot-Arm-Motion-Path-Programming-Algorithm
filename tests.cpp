@@ -12,6 +12,38 @@ Beam_Output beam_output;
 RRT_Output rrt_output;
 vector<RRT_Output*> rrt_outputs;
 
+void Beam_test()
+{
+	init_robot_arm(3, 3);
+	set_base_position(0, 4);
+	set_end_position(0, 2, 10, 2);
+	beam_config(3, NONE, 0, 0.5, 0.05, false);
+	beam_output = beam_search();
+	demonstrate_beam_results(beam_output);
+	reset_beam();
+	reset_position();
+}
+
+void RRT_test()
+{
+	init_robot_arm(3, 3);
+	set_base_position(0, 3);
+	set_obstacles(0.5, 1);
+	set_end_position(0, 4, 0, 2);
+	beam_config(3, NONE, 0, 0.5, 0.05, false);
+	rrt_config(1000, 1.0 / 5, 0.5, 0, 0, true, false, false);
+	rrt_output = RRT_search();
+	demonstrate_rrt_results(rrt_output);
+	reset_rrt();
+	reset_position();
+}
+
+/*
+================================
+Beam Search Algorithm Experiment
+================================
+ */
+
 void adjust_beam_width()
 {
 	init_robot_arm(3, 3);
@@ -430,7 +462,6 @@ void adjust_beam_weight_model()
 	int k = 5;
 	double step = 0.07;
 	cout << "Beam Width: " << k << ", Step: " << step << endl << endl << endl;
-	double w;
 	for (int i = 0; i < 100; i++)
 	{
 		set_random_case();
@@ -549,25 +580,46 @@ void adjust_beam_weight_model()
 	file << "w-θ对数模型, " << cnt[4] << endl;
 }
 
+/*
+========================================================
+Rapidly-exploring Random Tree (RRT) Algorithm Experiment
+========================================================
+ */
 
-
-
-
-
-
-
-
-void adjust_rrt_step_and_neighbor_ratio()
+void RRT_goal_bias_experiment()
 {
-	beam_config(5, NONE, 1, 2, 0.2, false);
-	cout << "Basic settings: 3, 3; 0, 2; 0, 2, 10, 2" << endl << endl << endl;
-	for (int i = 3; i <= 20; i++)
+	init_robot_arm(3, 3);
+	set_base_position(0, 3);
+	set_end_position(0, 4.5, 0, 1.5);
+	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
+	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl << endl << endl;
+
+	pair<double, double> p;
+	vector<double> x, r1, r2, r3, r4, r5, r6, t1, t2, t3, t4, t5, t6;
+	x.reserve(20);
+	r1.reserve(20);
+	r2.reserve(20);
+	r3.reserve(20);
+	r4.reserve(20);
+	r5.reserve(20);
+	r6.reserve(20);
+	t1.reserve(20);
+	t2.reserve(20);
+	t3.reserve(20);
+	t4.reserve(20);
+	t5.reserve(20);
+	t6.reserve(20);
+
+	for (double i = 0; i < 1; i += 0.05)
 	{
-		cout << "RRT Step Ratio: 1/" << i << endl;
+		cout << "Goal Bias Ratio: " << i << endl;
+		x.push_back(i);
+		rrt_config(1000, 1.0 / 5, i, 0, 0, true, false, false);
 
-		cout << endl << "Neighbor Range Ratio: " << 0.1 << endl;
-		rrt_config(1.0 / i, 1, 0.1, 1, 1, false, false, false);
-		for (int j = 0; j < 10; j++)
+		set_obstacles(0.33, 0.5);
+		cout << "Obstacle settings: 0.33, 0.5" << endl;
+		for (int j = 0; j < 100; j++)
 		{
 			RRT_Output* p = new RRT_Output();
 			*p = RRT_search();
@@ -575,14 +627,16 @@ void adjust_rrt_step_and_neighbor_ratio()
 			reset_rrt();
 			reset_position();
 		}
-		print_rrt_average_cost(rrt_outputs);
+		p = print_rrt_success_rate(rrt_outputs);
+		r1.push_back(p.first);
+		t1.push_back(p.second);
 		for (int j = 0; j < rrt_outputs.size(); j++)
 			delete rrt_outputs[j];
 		rrt_outputs.clear();
 
-		cout << endl << "Neighbor Range Ratio: " << 0.2 << endl;
-		rrt_config(1.0 / i, 1, 0.2, 1, 1, false, false, false);
-		for (int j = 0; j < 10; j++)
+		set_obstacles(0.33, 1);
+		cout << "Obstacle settings: 0.33, 1" << endl;
+		for (int j = 0; j < 100; j++)
 		{
 			RRT_Output* p = new RRT_Output();
 			*p = RRT_search();
@@ -590,14 +644,16 @@ void adjust_rrt_step_and_neighbor_ratio()
 			reset_rrt();
 			reset_position();
 		}
-		print_rrt_average_cost(rrt_outputs);
+		p = print_rrt_success_rate(rrt_outputs);
+		r2.push_back(p.first);
+		t2.push_back(p.second);
 		for (int j = 0; j < rrt_outputs.size(); j++)
 			delete rrt_outputs[j];
 		rrt_outputs.clear();
 
-		cout << endl << "Neighbor Range Ratio: " << 0.5 << endl;
-		rrt_config(1.0 / i, 1, 0.5, 1, 1, false, false, false);
-		for (int j = 0; j < 10; j++)
+		set_obstacles(0.33, 2);
+		cout << "Obstacle settings: 0.33, 2" << endl;
+		for (int j = 0; j < 100; j++)
 		{
 			RRT_Output* p = new RRT_Output();
 			*p = RRT_search();
@@ -605,14 +661,16 @@ void adjust_rrt_step_and_neighbor_ratio()
 			reset_rrt();
 			reset_position();
 		}
-		print_rrt_average_cost(rrt_outputs);
+		p = print_rrt_success_rate(rrt_outputs);
+		r3.push_back(p.first);
+		t3.push_back(p.second);
 		for (int j = 0; j < rrt_outputs.size(); j++)
 			delete rrt_outputs[j];
 		rrt_outputs.clear();
 
-		cout << endl << "Neighbor Range Ratio: " << 1.0 << endl;
-		rrt_config(1.0 / i, 1, 1.0, 1, 1, false, false, false);
-		for (int j = 0; j < 10; j++)
+		set_obstacles(0.67, 0.5);
+		cout << "Obstacle settings: 0.67, 0.5" << endl;
+		for (int j = 0; j < 100; j++)
 		{
 			RRT_Output* p = new RRT_Output();
 			*p = RRT_search();
@@ -620,14 +678,16 @@ void adjust_rrt_step_and_neighbor_ratio()
 			reset_rrt();
 			reset_position();
 		}
-		print_rrt_average_cost(rrt_outputs);
+		p = print_rrt_success_rate(rrt_outputs);
+		r4.push_back(p.first);
+		t4.push_back(p.second);
 		for (int j = 0; j < rrt_outputs.size(); j++)
 			delete rrt_outputs[j];
 		rrt_outputs.clear();
 
-		cout << endl << "Neighbor Range Ratio: " << 2.0 << endl;
-		rrt_config(1.0 / i, 1, 2.0, 1, 1, false, false, false);
-		for (int j = 0; j < 10; j++)
+		set_obstacles(0.67, 1);
+		cout << "Obstacle settings: 0.67, 1" << endl;
+		for (int j = 0; j < 100; j++)
 		{
 			RRT_Output* p = new RRT_Output();
 			*p = RRT_search();
@@ -635,14 +695,16 @@ void adjust_rrt_step_and_neighbor_ratio()
 			reset_rrt();
 			reset_position();
 		}
-		print_rrt_average_cost(rrt_outputs);
+		p = print_rrt_success_rate(rrt_outputs);
+		r5.push_back(p.first);
+		t5.push_back(p.second);
 		for (int j = 0; j < rrt_outputs.size(); j++)
 			delete rrt_outputs[j];
 		rrt_outputs.clear();
 
-		cout << endl << "Neighbor Range Ratio: " << 5.0 << endl;
-		rrt_config(1.0 / i, 1, 5.0, 1, 1, false, false, false);
-		for (int j = 0; j < 10; j++)
+		set_obstacles(0.67, 2);
+		cout << "Obstacle settings: 0.67, 2" << endl;
+		for (int j = 0; j < 100; j++)
 		{
 			RRT_Output* p = new RRT_Output();
 			*p = RRT_search();
@@ -650,26 +712,430 @@ void adjust_rrt_step_and_neighbor_ratio()
 			reset_rrt();
 			reset_position();
 		}
-		print_rrt_average_cost(rrt_outputs);
-		for (int j = 0; j < rrt_outputs.size(); j++)
-			delete rrt_outputs[j];
-		rrt_outputs.clear();
-
-		cout << endl << "Neighbor Range Ratio: " << 10.0 << endl;
-		rrt_config(1.0 / i, 1, 10.0, 1, 1, false, false, false);
-		for (int j = 0; j < 10; j++)
-		{
-			RRT_Output* p = new RRT_Output();
-			*p = RRT_search();
-			rrt_outputs.push_back(p);
-			reset_rrt();
-			reset_position();
-		}
-		print_rrt_average_cost(rrt_outputs);
+		p = print_rrt_success_rate(rrt_outputs);
+		r6.push_back(p.first);
+		t6.push_back(p.second);
 		for (int j = 0; j < rrt_outputs.size(); j++)
 			delete rrt_outputs[j];
 		rrt_outputs.clear();
 
 		cout << endl << "----------------------------------------" << endl << endl;
 	}
+
+	figure_size(1200, 800);
+	plot(x, r1, { {"label", "Obstacle settings: 0.33, 0.5"}, {"color", "red"}, {"marker", "o"} });
+	plot(x, r2, { {"label", "Obstacle settings: 0.33, 1"}, {"color", "orange"}, {"marker", "s"} });
+	plot(x, r3, { {"label", "Obstacle settings: 0.33, 2"}, {"color", "yellow"}, {"marker", "^"} });
+	plot(x, r4, { {"label", "Obstacle settings: 0.67, 0.5"}, {"color", "green"}, {"marker", "d"} });
+	plot(x, r5, { {"label", "Obstacle settings: 0.67, 1"}, {"color", "blue"}, {"marker", "p"} });
+	plot(x, r6, { {"label", "Obstacle settings: 0.67, 2"}, {"color", "violet"}, {"marker", "h"} });
+	title("Goal Bias Experiment", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Goal Bias Ratio", { {"fontweight", "bold"} });
+	ylabel("Success Rate/%", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("SuccessRate-GoalBiasRatio.png");
+	close();
+
+	figure_size(1200, 800);
+	plot(x, t1, { {"label", "Obstacle settings: 0.33, 0.5"}, {"color", "red"}, {"marker", "o"} });
+	plot(x, t2, { {"label", "Obstacle settings: 0.33, 1"}, {"color", "orange"}, {"marker", "s"} });
+	plot(x, t3, { {"label", "Obstacle settings: 0.33, 2"}, {"color", "yellow"}, {"marker", "^"} });
+	plot(x, t4, { {"label", "Obstacle settings: 0.67, 0.5"}, {"color", "green"}, {"marker", "d"} });
+	plot(x, t5, { {"label", "Obstacle settings: 0.67, 1"}, {"color", "blue"}, {"marker", "p"} });
+	plot(x, t6, { {"label", "Obstacle settings: 0.67, 2"}, {"color", "violet"}, {"marker", "h"} });
+	title("Goal Bias Experiment", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Goal Bias Ratio", { {"fontweight", "bold"} });
+	ylabel("Average Time Cost/s", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageTimeCost-GoalBiasRatio.png");
+	close();
+}
+
+void adjust_rrt_step_ratio()
+{
+	init_robot_arm(3, 3);
+	set_base_position(0, 3);
+	set_end_position(0, 4.5, 0, 1.5);
+	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
+	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
+	cout << "RRT Goal Bias Ratio: 0.3" << endl << endl << endl;
+
+	vector<double> x, c1, c2, c3, c4, c5, c6, y1, y2, y3, y4, y5, y6, t1, t2, t3, t4, t5, t6;
+	x.reserve(18);
+	c1.reserve(18);
+	c2.reserve(18);
+	c3.reserve(18);
+	c4.reserve(18);
+	c5.reserve(18);
+	c6.reserve(18);
+	y1.reserve(18);
+	y2.reserve(18);
+	y3.reserve(18);
+	y4.reserve(18);
+	y5.reserve(18);
+	y6.reserve(18);
+	t1.reserve(18);
+	t2.reserve(18);
+	t3.reserve(18);
+	t4.reserve(18);
+	t5.reserve(18);
+	t6.reserve(18);
+
+	for (int i = 3; i <= 20; i++)
+	{
+		cout << "RRT Step Ratio: 1/" << i << endl;
+		x.push_back(i);
+		rrt_config(1000, 1.0 / i, 0.3, 0, 0, true, false, false);
+
+		set_obstacles(0.33, 0.5);
+		cout << "Obstacle settings: 0.33, 0.5" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c1.push_back(rrt_output.end_distance_cost);
+		y1.push_back(rrt_output.distance_cost);
+		t1.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.33, 1);
+		cout << "Obstacle settings: 0.33, 1" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c2.push_back(rrt_output.end_distance_cost);
+		y2.push_back(rrt_output.distance_cost);
+		t2.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.33, 2);
+		cout << "Obstacle settings: 0.33, 2" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c3.push_back(rrt_output.end_distance_cost);
+		y3.push_back(rrt_output.distance_cost);
+		t3.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 0.5);
+		cout << "Obstacle settings: 0.67, 0.5" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c4.push_back(rrt_output.end_distance_cost);
+		y4.push_back(rrt_output.distance_cost);
+		t4.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 1);
+		cout << "Obstacle settings: 0.67, 1" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c5.push_back(rrt_output.end_distance_cost);
+		y5.push_back(rrt_output.distance_cost);
+		t5.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 2);
+		cout << "Obstacle settings: 0.67, 2" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c6.push_back(rrt_output.end_distance_cost);
+		y6.push_back(rrt_output.distance_cost);
+		t6.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		cout << endl << "----------------------------------------" << endl << endl;
+	}
+
+	figure_size(1200, 800);
+	plot(x, c1, { {"label", "Obstacle settings: 0.33, 0.5"}, {"color", "red"}, {"marker", "o"} });
+	plot(x, c2, { {"label", "Obstacle settings: 0.33, 1"}, {"color", "orange"}, {"marker", "s"} });
+	plot(x, c3, { {"label", "Obstacle settings: 0.33, 2"}, {"color", "yellow"}, {"marker", "^"} });
+	plot(x, c4, { {"label", "Obstacle settings: 0.67, 0.5"}, {"color", "green"}, {"marker", "d"} });
+	plot(x, c5, { {"label", "Obstacle settings: 0.67, 1"}, {"color", "blue"}, {"marker", "p"} });
+	plot(x, c6, { {"label", "Obstacle settings: 0.67, 2"}, {"color", "violet"}, {"marker", "h"} });
+	title("Adjust RRT Step Ratio", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("1 / RRT Step Ratio", { {"fontweight", "bold"} });
+	ylabel("Average End Distance Cost", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageEndDistanceCost-RRTStepRatio.png");
+	close();
+
+	figure_size(1200, 800);
+	plot(x, y1, { {"label", "Obstacle settings: 0.33, 0.5"}, {"color", "red"}, {"marker", "o"} });
+	plot(x, y2, { {"label", "Obstacle settings: 0.33, 1"}, {"color", "orange"}, {"marker", "s"} });
+	plot(x, y3, { {"label", "Obstacle settings: 0.33, 2"}, {"color", "yellow"}, {"marker", "^"} });
+	plot(x, y4, { {"label", "Obstacle settings: 0.67, 0.5"}, {"color", "green"}, {"marker", "d"} });
+	plot(x, y5, { {"label", "Obstacle settings: 0.67, 1"}, {"color", "blue"}, {"marker", "p"} });
+	plot(x, y6, { {"label", "Obstacle settings: 0.67, 2"}, {"color", "violet"}, {"marker", "h"} });
+	title("Adjust RRT Step Ratio", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("1 / RRT Step Ratio", { {"fontweight", "bold"} });
+	ylabel("Average Distance Cost", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageDistanceCost-RRTStepRatio.png");
+	close();
+
+	figure_size(1200, 800);
+	plot(x, t1, { {"label", "Obstacle settings: 0.33, 0.5"}, {"color", "red"}, {"marker", "o"} });
+	plot(x, t2, { {"label", "Obstacle settings: 0.33, 1"}, {"color", "orange"}, {"marker", "s"} });
+	plot(x, t3, { {"label", "Obstacle settings: 0.33, 2"}, {"color", "yellow"}, {"marker", "^"} });
+	plot(x, t4, { {"label", "Obstacle settings: 0.67, 0.5"}, {"color", "green"}, {"marker", "d"} });
+	plot(x, t5, { {"label", "Obstacle settings: 0.67, 1"}, {"color", "blue"}, {"marker", "p"} });
+	plot(x, t6, { {"label", "Obstacle settings: 0.67, 2"}, {"color", "violet"}, {"marker", "h"} });
+	title("Adjust RRT Step Ratio", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("1 / RRT Step Ratio", { {"fontweight", "bold"} });
+	ylabel("Average Time Cost/s", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageTimeCost-RRTStepRatio.png");
+	close();
+}
+
+void adjust_rrt_neighbor_range_ratio()
+{
+	init_robot_arm(3, 3);
+	set_base_position(0, 3);
+	set_end_position(0, 4.5, 0, 1.5);
+	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
+	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
+	cout << "RRT Goal Bias Ratio: 0.3; Step Ratio: 1/3" << endl << endl << endl;
+
+	vector<double> x, c1, c2, c3, c4, c5, c6, y1, y2, y3, y4, y5, y6, t1, t2, t3, t4, t5, t6;
+	x.reserve(30);
+	c1.reserve(30);
+	c2.reserve(30);
+	c3.reserve(30);
+	c4.reserve(30);
+	c5.reserve(30);
+	c6.reserve(30);
+	y1.reserve(30);
+	y2.reserve(30);
+	y3.reserve(30);
+	y4.reserve(30);
+	y5.reserve(30);
+	y6.reserve(30);
+	t1.reserve(30);
+	t2.reserve(30);
+	t3.reserve(30);
+	t4.reserve(30);
+	t5.reserve(30);
+	t6.reserve(30);
+	for (double nrr = 0.1; nrr <= 3; nrr += 0.1)
+	{
+		cout << "Neighbor Range Ratio: " << nrr << endl;
+		x.push_back(nrr);
+		rrt_config(1000, 1.0 / 3, 0.3, nrr, 0, true, true, false);
+
+		set_obstacles(0.33, 0.5);
+		cout << "Obstacle settings: 0.33, 0.5" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c1.push_back(rrt_output.end_distance_cost);
+		y1.push_back(rrt_output.distance_cost);
+		t1.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.33, 1);
+		cout << "Obstacle settings: 0.33, 1" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c2.push_back(rrt_output.end_distance_cost);
+		y2.push_back(rrt_output.distance_cost);
+		t2.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.33, 2);
+		cout << "Obstacle settings: 0.33, 2" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c3.push_back(rrt_output.end_distance_cost);
+		y3.push_back(rrt_output.distance_cost);
+		t3.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 0.5);
+		cout << "Obstacle settings: 0.67, 0.5" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c4.push_back(rrt_output.end_distance_cost);
+		y4.push_back(rrt_output.distance_cost);
+		t4.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 1);
+		cout << "Obstacle settings: 0.67, 1" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c5.push_back(rrt_output.end_distance_cost);
+		y5.push_back(rrt_output.distance_cost);
+		t5.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 2);
+		cout << "Obstacle settings: 0.67, 2" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c6.push_back(rrt_output.end_distance_cost);
+		y6.push_back(rrt_output.distance_cost);
+		t6.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		cout << endl << "----------------------------------------" << endl << endl;
+	}
+
+	figure_size(1200, 800);
+	plot(x, c1, { {"label", "Obstacle settings: 0.33, 0.5"}, {"color", "red"}, {"marker", "o"} });
+	plot(x, c2, { {"label", "Obstacle settings: 0.33, 1"}, {"color", "orange"}, {"marker", "s"} });
+	plot(x, c3, { {"label", "Obstacle settings: 0.33, 2"}, {"color", "yellow"}, {"marker", "^"} });
+	plot(x, c4, { {"label", "Obstacle settings: 0.67, 0.5"}, {"color", "green"}, {"marker", "d"} });
+	plot(x, c5, { {"label", "Obstacle settings: 0.67, 1"}, {"color", "blue"}, {"marker", "p"} });
+	plot(x, c6, { {"label", "Obstacle settings: 0.67, 2"}, {"color", "violet"}, {"marker", "h"} });
+	title("Adjust Neighbor Range Ratio", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Neighbor Range Ratio", { {"fontweight", "bold"} });
+	ylabel("Average End Distance Cost", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageEndDistanceCost-RRTNeighborRangeRatio.png");
+	close();
+
+	figure_size(1200, 800);
+	plot(x, y1, { {"label", "Obstacle settings: 0.33, 0.5"}, {"color", "red"}, {"marker", "o"} });
+	plot(x, y2, { {"label", "Obstacle settings: 0.33, 1"}, {"color", "orange"}, {"marker", "s"} });
+	plot(x, y3, { {"label", "Obstacle settings: 0.33, 2"}, {"color", "yellow"}, {"marker", "^"} });
+	plot(x, y4, { {"label", "Obstacle settings: 0.67, 0.5"}, {"color", "green"}, {"marker", "d"} });
+	plot(x, y5, { {"label", "Obstacle settings: 0.67, 1"}, {"color", "blue"}, {"marker", "p"} });
+	plot(x, y6, { {"label", "Obstacle settings: 0.67, 2"}, {"color", "violet"}, {"marker", "h"} });
+	title("Adjust Neighbor Range Ratio", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Neighbor Range Ratio", { {"fontweight", "bold"} });
+	ylabel("Average Distance Cost", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageDistanceCost-RRTNeighborRangeRatio.png");
+	close();
+
+	figure_size(1200, 800);
+	plot(x, t1, { {"label", "Obstacle settings: 0.33, 0.5"}, {"color", "red"}, {"marker", "o"} });
+	plot(x, t2, { {"label", "Obstacle settings: 0.33, 1"}, {"color", "orange"}, {"marker", "s"} });
+	plot(x, t3, { {"label", "Obstacle settings: 0.33, 2"}, {"color", "yellow"}, {"marker", "^"} });
+	plot(x, t4, { {"label", "Obstacle settings: 0.67, 0.5"}, {"color", "green"}, {"marker", "d"} });
+	plot(x, t5, { {"label", "Obstacle settings: 0.67, 1"}, {"color", "blue"}, {"marker", "p"} });
+	plot(x, t6, { {"label", "Obstacle settings: 0.67, 2"}, {"color", "violet"}, {"marker", "h"} });
+	title("Adjust Neighbor Range Ratio", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Neighbor Range Ratio", { {"fontweight", "bold"} });
+	ylabel("Average Time Cost/s", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageTimeCost-RRTNeighborRangeRatio.png");
+	close();
 }

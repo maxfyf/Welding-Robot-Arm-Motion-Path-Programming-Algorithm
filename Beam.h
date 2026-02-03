@@ -4,6 +4,7 @@
 #include "global.h"
 #include <vector>
 #define RATIO 0.6972    //平分半圆面积且平行于半圆直径的弦到半圆直径的距离与半径的比值 
+#define ITER_RATIO 10    //搜索步数与最小步数的比值
 using namespace std;
 
 typedef struct
