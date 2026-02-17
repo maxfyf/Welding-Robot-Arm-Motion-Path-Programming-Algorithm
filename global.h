@@ -54,5 +54,6 @@ double calculate_angle(double dist);    //计算机械臂间的夹角
 void projection(double x, double y, double& x_h, double& y_h, double& r);    //计算点到线段的投影点
 void linear_equations(double a1, double b1, double c1, double a2, double b2, double c2, bool& solvable, double& x, double& y);    //解二元一次方程组
 bool hit(double xa, double ya, double za, double xb, double yb, double zb);    //判断线段是否与障碍物相交
+double dist_point_cuboid(double x, double y, double z, double xc, double yc, double zc, double xw, double yw, double zw);    //计算点到长方体的距离
 
 #endif

@@ -224,3 +224,76 @@ bool hit(double xa, double ya, double za, double xb, double yb, double zb)
 		else return (ya <= h0 || yb <= h0);
 	}
 }
+
+double dist_point_cuboid(double x, double y, double z, double xc, double yc, double zc, double xw, double yw, double zw)
+{
+	double x_min = xc - xw / 2;
+	double x_max = xc + xw / 2;
+	double y_min = yc - yw / 2;
+	double y_max = yc + yw / 2;
+	double z_min = zc - zw / 2;
+	double z_max = zc + zw / 2;
+	if (x < x_min)
+	{
+		if (y < y_min)
+		{
+			if (z < z_min) return dist3(x, y, z, x_min, y_min, z_min);
+			else if (z > z_max) return dist3(x, y, z, x_min, y_min, z_max);
+			else return dist2(x, y, x_min, y_min);
+		}
+		else if (y > y_max)
+		{
+			if (z < z_min) return dist3(x, y, z, x_min, y_max, z_min);
+			else if (z > z_max) return dist3(x, y, z, x_min, y_max, z_max);
+			else return dist2(x, y, x_min, y_max);
+		}
+		else
+		{
+			if (z < z_min) return dist2(x, z, x_min, z_min);
+			else if (z > z_max) return dist2(x, z, x_min, z_max);
+			else return x_min - x;
+		}
+	}
+	else if (x > x_max)
+	{
+		if (y < y_min)
+		{
+			if (z < z_min) return dist3(x, y, z, x_max, y_min, z_min);
+			else if (z > z_max) return dist3(x, y, z, x_max, y_min, z_max);
+			else return dist2(x, y, x_max, y_min);
+		}
+		else if (y > y_max)
+		{
+			if (z < z_min) return dist3(x, y, z, x_max, y_max, z_min);
+			else if (z > z_max) return dist3(x, y, z, x_max, y_max, z_max);
+			else return dist2(x, y, x_max, y_max);
+		}
+		else
+		{
+			if (z < z_min) return dist2(x, z, x_max, z_min);
+			else if (z > z_max) return dist2(x, z, x_max, z_max);
+			else return x - x_max;
+		}
+	}
+	else
+	{
+		if (y < y_min)
+		{
+			if (z < z_min) return dist2(y, z, y_min, z_min);
+			else if (z > z_max) return dist2(y, z, y_min, z_max);
+			else return y_min - y;
+		}
+		else if (y > y_max)
+		{
+			if (z < z_min) return dist2(y, z, y_max, z_min);
+			else if (z > z_max) return dist2(y, z, y_max, z_max);
+			else return y - y_max;
+		}
+		else
+		{
+			if (z < z_min) return z_min - z;
+			else if (z > z_max) return z - z_max;
+			else return 0;
+		}
+	}
+}

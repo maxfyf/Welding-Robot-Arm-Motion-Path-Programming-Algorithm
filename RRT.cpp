@@ -14,6 +14,7 @@ double goal_bias;    //目标偏置频率
 double neighbor_range_ratio;    //邻域半径与搜索步长的比值
 double RRT_W;    //启发项权重
 bool goal_bias_optimize;	   //是否目标偏置优化
+bool octree_optimize;    //是否八叉树优化
 bool relaxation_optimize;    //是否松弛优化
 bool heuristic_optimize;    //是否启发式优化
 
@@ -25,6 +26,8 @@ int rrt_n;    //迭代次数
 double step;    //搜索树生长步长
 double neighbor_range;    //邻域半径
 
+void error();
+
 typedef struct Node
 {
 	double x;
@@ -34,12 +37,289 @@ typedef struct Node
 	double f;    //代价+启发项
 	struct Node* parent;
 }Node;    //搜索树上结点
-static vector<Node*> tree;    //搜索树
+vector<Node*> tree;    //搜索树
+bool can_grow(Node* node, double x_dir, double y_dir, double z_dir, double& min)
+{
+	if (!node) error();
+	double dist;
+	double x_e, y_e, z_e;
+	if ((dist = dist3(node->x, node->y, node->z, x_dir, y_dir, z_dir)) < min)
+	{
+		if (dist > step)
+		{
+			x_e = node->x + (x_dir - node->x) * step / dist;
+			y_e = node->y + (y_dir - node->y) * step / dist;
+			z_e = node->z + (z_dir - node->z) * step / dist;
+		}
+		else
+		{
+			x_e = x_dir;
+			y_e = y_dir;
+			z_e = z_dir;
+		}
+		if (hit(node->x, node->y, node->z, x_e, y_e, z_e)) return false;
+		min = dist;
+		return true;
+	}
+	return false;
+}
+
+typedef struct Octnode
+{
+	double x, y, z;
+	double xw;    //法向宽度
+	double yw;    //高度
+	double zw;    //方向宽度
+	struct Octnode* child[8];
+	struct Octnode* parent;
+	int num;
+	Node* nodes[MAX_POINTS_PER_OCTNODE];
+}Octnode;    //八叉树上节点
+class Octree
+{
+private:
+	Octnode* root;    //八叉树根
+	double x_c, y_c, z_c;	//八叉树中心坐标
+	double direction;    //方向宽度
+	double normal;    //法向宽度
+	double height;    //高度
+
+	void transformation(double x0, double y0, double z0, double& x, double& y, double& z)    //从原始坐标系变换到八叉树空间坐标系
+	{
+		double vec_x = x0 - x_c;
+		double vec_y = y0 - y_c;
+		double vec_z = z0 - z_c;
+		double theta = ((z_e1 == z_e2) ? (x_e1 > x_e2 ? PI / 2 : -PI / 2) : atan((x_e1 - x_e2) / (z_e2 - z_e1)));
+		x = vec_x * cos(theta) + vec_z * sin(theta);
+		y = vec_y;
+		z = vec_z * cos(theta) - vec_x * sin(theta);
+	}
+
+	void init_octnode(Octnode* node)
+	{
+		for (int i = 0; i < 8; i++)
+			node->child[i] = NULL;
+		node->parent = NULL;
+		node->num = 0;
+		for (int i = 0; i < MAX_POINTS_PER_OCTNODE; i++)
+			node->nodes[i] = NULL;
+	}
+
+	Octnode* find_leaf(double x, double y, double z)
+	{
+		Octnode* node = root;
+		if (!root) error();
+		while (node->num > MAX_POINTS_PER_OCTNODE)
+		{
+			int index = 0;
+			if (x > node->x) index += 4;
+			if (y > node->y) index += 2;
+			if (z > node->z) index += 1;
+			node = node->child[index];
+			if (!node) error();
+		}
+		return node;
+	}
+
+	void split(Octnode* node)
+	{
+		if (node->num != MAX_POINTS_PER_OCTNODE) error();
+		for (int i = 0; i < 8; i++)
+		{
+			Octnode* p = new Octnode();
+			init_octnode(p);
+			p->x = (i & 4) ? (node->x + node->xw / 4) : (node->x - node->xw / 4);
+			p->y = (i & 2) ? (node->y + node->yw / 4) : (node->y - node->yw / 4);
+			p->z = (i & 1) ? (node->z + node->zw / 4) : (node->z - node->zw / 4);
+			p->xw = node->xw / 2;
+			p->yw = node->yw / 2;
+			p->zw = node->zw / 2;
+			node->child[i] = p;
+			p->parent = node;
+		}
+
+		for (int i = 0; i < MAX_POINTS_PER_OCTNODE; i++)
+		{
+			Node* p = node->nodes[i];
+			int index = 0;
+			double x, y, z;
+			transformation(p->x, p->y, p->z, x, y, z);
+			if (x > node->x) index += 4;
+			if (y > node->y) index += 2;
+			if (z > node->z) index += 1;
+			Octnode* child = node->child[index];
+			if (!child) error();
+			child->nodes[child->num] = p;
+			child->num++;
+		}
+	}
+
+	Node* visit_leaf_nodes_to_update(Octnode* node, double x, double y, double z, double& min, Node* ptr)
+	{
+		if (node->num > MAX_POINTS_PER_OCTNODE) error();
+		for (int i = 0; i < node->num; i++)
+		{
+			Node* p = node->nodes[i];
+			ptr = can_grow(p, x, y, z, min) ? p : ptr;
+		}
+		return ptr;
+	}
+
+	void visit_leaf_nodes_to_connect(Octnode* node, Node* ptr, double nr, vector<Node*>& neighbors)
+	{
+		if (node->num > MAX_POINTS_PER_OCTNODE) error();
+		for (int i = 0; i < node->num; i++)
+		{
+			Node* p = node->nodes[i];
+			if (ptr != p && dist3(ptr->x, ptr->y, ptr->z, p->x, p->y, p->z) <= nr && !hit(ptr->x, ptr->y, ptr->z, p->x, p->y, p->z))
+				neighbors.push_back(p);
+		}
+	}
+
+	Node* traverse_octree_for_node(Octnode* node, double x0, double y0, double z0, double& min, Node* ptr)
+	{
+		double x, y, z;
+		transformation(x0, y0, z0, x, y, z);
+		if (dist_point_cuboid(x, y, z, node->x, node->y, node->z, node->xw, node->yw, node->zw) >= min) return ptr;    //剪枝
+		if (node->num > MAX_POINTS_PER_OCTNODE)
+		{
+			for (int i = 0; i < 8; i++)
+				ptr = traverse_octree_for_node(node->child[i], x0, y0, z0, min, ptr);
+		}
+		else
+			ptr = visit_leaf_nodes_to_update(node, x0, y0, z0, min, ptr);
+		return ptr;
+	}
+
+	void traverse_octree_for_neighbors(Octnode* node, Node* ptr, double nr, vector<Node*>& neighbors)
+	{
+		double x, y, z;
+		transformation(ptr->x, ptr->y, ptr->z, x, y, z);
+		if (dist_point_cuboid(x, y, z, node->x, node->y, node->z, node->xw, node->yw, node->zw) > nr) return;    //剪枝
+		if (node->num > MAX_POINTS_PER_OCTNODE)
+		{
+			for (int i = 0; i < 8; i++)
+				traverse_octree_for_neighbors(node->child[i], ptr, nr, neighbors);
+		}
+		else
+			visit_leaf_nodes_to_connect(node, ptr, nr, neighbors);
+	}
+
+	void free_octree(Octnode* node)
+	{
+		if (!node) return;
+		if (node->num > MAX_POINTS_PER_OCTNODE)
+		{
+			for (int i = 0; i < 8; i++)
+			{
+				free_octree(node->child[i]);
+				node->child[i] = NULL;
+			}
+		}
+		delete node;
+	}
+
+public:
+	Octree()
+	{
+		x_c = (x_e1 + x_e2) / 2;
+		y_c = h0 / lr / 2;
+		z_c = (z_e1 + z_e2) / 2;
+		direction = dist2(x_e1, z_e1, x_e2, z_e2);
+		normal = direction;
+		height = h0 / lr;
+		root = new Octnode();
+		init_octnode(root);
+		root->x = 0;
+		root->y = 0;
+		root->z = 0;
+		root->xw = normal;
+		root->yw = height;
+		root->zw = direction;
+		insert(tree[0]);
+	}
+
+	void insert(Node* node)
+	{
+		double x, y, z;
+		transformation(node->x, node->y, node->z, x, y, z);
+		Octnode* p = find_leaf(x, y, z);
+		while (p->num == MAX_POINTS_PER_OCTNODE)
+		{
+			split(p);
+			p->num++;
+			int index = 0;
+			if (x > p->x) index += 4;
+			if (y > p->y) index += 2;
+			if (z > p->z) index += 1;
+			p = p->child[index];
+			if (!p) error();
+		}
+		if (p->num >= MAX_POINTS_PER_OCTNODE) error();
+		p->nodes[p->num] = node;
+		p->num++;
+	}
+
+	Node* find_closest(double x0, double y0, double z0, double& min)
+	{
+		Node* ptr = NULL;
+		min = MAX_DBL;
+
+		double x, y, z;
+		transformation(x0, y0, z0, x, y, z);
+		Octnode* present = find_leaf(x, y, z);
+		ptr = visit_leaf_nodes_to_update(present, x0, y0, z0, min, ptr);
+		Octnode* prev = present;
+		present = present->parent;
+		while (present)
+		{
+			for (int i = 0; i < 8; i++)
+			{
+				if (present->child[i] != prev)
+					ptr = traverse_octree_for_node(present->child[i], x0, y0, z0, min, ptr);
+			}
+			prev = present;
+			present = present->parent;
+		}
+		return ptr;
+	}
+
+	void find_neighbors(Node* node, double nr, vector<Node*>& neighbors)
+	{
+		traverse_octree_for_neighbors(root, node, nr, neighbors);
+	}
+
+	~Octree()
+	{
+		free_octree(root);
+		root = NULL;
+	}
+};
+static Octree *octree;    //八叉树
+
 static multimap<Node*, Node*> adjlist;    //邻接表
 static multimap<double, Node*> openlist;    //开放列表
 static unordered_set<Node*> closedlist;    //封闭列表
 
-void rrt_config(int it, double sr, double gb, double nrr, double w, bool gb_opt, bool r_opt, bool h_opt)
+void error()
+{
+	if (octree)
+	{
+		delete octree;
+		octree = NULL;
+	}
+	for (int i = 0; i < tree.size(); i++)
+		delete tree[i];
+	tree.clear();
+
+	adjlist.clear();
+	openlist.clear();
+	closedlist.clear();
+
+	throw std::runtime_error("RRT Error");
+}
+
+void rrt_config(int it, double sr, double gb, double nrr, double w, bool gb_opt, bool o_opt, bool r_opt, bool h_opt)
 {
 	rrt_n = it;
 	rrt_step_ratio = sr;
@@ -47,8 +327,11 @@ void rrt_config(int it, double sr, double gb, double nrr, double w, bool gb_opt,
 	neighbor_range_ratio = nrr;
 	RRT_W = w;
 	goal_bias_optimize = gb_opt;
+	octree_optimize = o_opt;
 	relaxation_optimize = r_opt;
 	heuristic_optimize = h_opt && r_opt;
+
+	octree = NULL;
 }
 
 void reset_rrt()
@@ -166,8 +449,10 @@ RRT_Output RRT_search()
 	rrt_end_path.reserve(rrt_n);
 
 	Node* ptr;
+	Node* prev_biased_ptr = NULL;
 	Node* p = new Node({ x_e1, 0, z_e1, relaxation_optimize ? 0 : MAX_DBL, heuristic_optimize ? dist2(x_e1, z_e1, x_e2, z_e2) : MAX_DBL, NULL });
 	tree.push_back(p);
+	if (octree_optimize) octree = new Octree();
 	random_device rd;
 	mt19937 gen(rd());
 	double cnt = goal_bias;
@@ -196,29 +481,13 @@ RRT_Output RRT_search()
 
 		double min = MAX_DBL;
 		ptr = NULL;
-		double dist;
-		double x_e, y_e, z_e;
-		for (int j = 0; j < tree.size(); j++)
+		if (!octree_optimize)
 		{
-			if ((dist = dist3(tree[j]->x, tree[j]->y, tree[j]->z, x_dir, y_dir, z_dir)) < min)
-			{
-				if (dist > step)
-				{
-					x_e = tree[j]->x + (x_dir - tree[j]->x) * step / dist;
-					y_e = tree[j]->y + (y_dir - tree[j]->y) * step / dist;
-					z_e = tree[j]->z + (z_dir - tree[j]->z) * step / dist;
-				}
-				else 
-				{
-					x_e = x_dir;
-					y_e = y_dir;
-					z_e = z_dir;
-				}
-				if (hit(tree[j]->x, tree[j]->y, tree[j]->z, x_e, y_e, z_e)) continue;
-				ptr = tree[j];
-				min = dist;
-			}
+			for (int j = 0; j < tree.size(); j++)
+				ptr = can_grow(tree[j], x_dir, y_dir, z_dir, min) ? tree[j] : ptr;
 		}
+		else
+			ptr = octree->find_closest(x_dir, y_dir, z_dir, min);
 		if (!ptr)
 		{
 			if (!is_goal_bias)
@@ -228,6 +497,11 @@ RRT_Output RRT_search()
 			}
 			continue;
 		}
+		else if (is_goal_bias)
+		{
+			if (ptr == prev_biased_ptr) continue;
+			prev_biased_ptr = ptr;
+		}
 		if (min > step)
 		{
 			x_dir = ptr->x + (x_dir - ptr->x) * step / min;
@@ -236,6 +510,7 @@ RRT_Output RRT_search()
 		}
 		p = new Node({ x_dir, y_dir, z_dir, MAX_DBL, MAX_DBL, ptr });
 		tree.push_back(p);
+		if (octree_optimize) octree->insert(p);
 
 		if(!relaxation_optimize)
 		{
@@ -252,9 +527,14 @@ RRT_Output RRT_search()
 			if (x_dir == x_e2 && y_dir == 0 && z_dir == z_e2)
 				terminal_index = (int)(tree.size() - 1);
 			vector<Node*> neighbors;
-			for(int j = 0; j < tree.size() - 1; j++)
-				if (dist3(tree[j]->x, tree[j]->y, tree[j]->z, p->x, p->y, p->z) <= neighbor_range && !hit(tree[j]->x, tree[j]->y, tree[j]->z, p->x, p->y, p->z))
-					neighbors.push_back(tree[j]);
+			if(!octree_optimize)
+			{
+				for (int j = 0; j < tree.size() - 1; j++)
+					if (tree[j] != p && dist3(tree[j]->x, tree[j]->y, tree[j]->z, p->x, p->y, p->z) <= neighbor_range && !hit(tree[j]->x, tree[j]->y, tree[j]->z, p->x, p->y, p->z))
+						neighbors.push_back(tree[j]);
+			}
+			else
+				octree->find_neighbors(p, neighbor_range, neighbors);
 			if (neighbors.empty())
 			{
 				adjlist.insert(make_pair(ptr, p));
@@ -268,6 +548,8 @@ RRT_Output RRT_search()
 				}
 		}
 	}
+	if (octree_optimize) delete octree;
+
 	vector<Node*> temp;
 	temp.reserve(rrt_n);
 	if (!relaxation_optimize)

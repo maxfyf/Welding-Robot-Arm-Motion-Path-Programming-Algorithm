@@ -31,7 +31,7 @@ void RRT_test()
 	set_obstacles(0.5, 1);
 	set_end_position(0, 4, 0, 2);
 	beam_config(3, NONE, 0, 0.5, 0.05, false);
-	rrt_config(1000, 1.0 / 5, 0.5, 0, 0, true, false, false);
+	rrt_config(1000, 1.0 / 5, 0.5, 0, 0, true, true, true, false);
 	rrt_output = RRT_search();
 	demonstrate_rrt_results(rrt_output);
 	reset_rrt();
@@ -615,7 +615,7 @@ void RRT_goal_bias_experiment()
 	{
 		cout << "Goal Bias Ratio: " << i << endl;
 		x.push_back(i);
-		rrt_config(1000, 1.0 / 5, i, 0, 0, true, false, false);
+		rrt_config(1000, 1.0 / 5, i, 0, 0, true, false, false, false);
 
 		set_obstacles(0.33, 0.5);
 		cout << "Obstacle settings: 0.33, 0.5" << endl;
@@ -788,7 +788,7 @@ void adjust_rrt_step_ratio()
 	{
 		cout << "RRT Step Ratio: 1/" << i << endl;
 		x.push_back(i);
-		rrt_config(1000, 1.0 / i, 0.3, 0, 0, true, false, false);
+		rrt_config(1000, 1.0 / i, 0.3, 0, 0, true, false, false, false);
 
 		set_obstacles(0.33, 0.5);
 		cout << "Obstacle settings: 0.33, 0.5" << endl;
@@ -981,7 +981,7 @@ void adjust_rrt_neighbor_range_ratio()
 	{
 		cout << "Neighbor Range Ratio: " << nrr << endl;
 		x.push_back(nrr);
-		rrt_config(1000, 1.0 / 3, 0.3, nrr, 0, true, true, false);
+		rrt_config(1000, 1.0 / 3, 0.3, nrr, 0, true, false, true, false);
 
 		set_obstacles(0.33, 0.5);
 		cout << "Obstacle settings: 0.33, 0.5" << endl;
@@ -1138,4 +1138,269 @@ void adjust_rrt_neighbor_range_ratio()
 	grid(true);
 	save("AverageTimeCost-RRTNeighborRangeRatio.png");
 	close();
+}
+
+void relaxation_optimize_experiment()
+{
+	init_robot_arm(3, 3);
+	set_base_position(0, 3);
+	set_end_position(0, 4.5, 0, 1.5);
+	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
+	set_obstacles(0.5, 1);
+	cout << "Obstacle settings: 0.5, 1" << endl;
+	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
+	cout << "Iterations: 3000; RRT Goal Bias Ratio: 0.3; Step Ratio: 1/3; neighbor range ratio: 1" << endl << endl << endl;
+
+	vector<double> x, c1, c2, c, y1, y2, t1, t2;
+	x.reserve(10);
+	c1.reserve(10);
+	c2.reserve(10);
+	y1.reserve(10);
+	y2.reserve(10);
+	t1.reserve(10);
+	t2.reserve(10);
+	for (int it = 1000; it <= 10000; it += 1000)
+	{
+		x.push_back(it);
+		c.push_back(4);
+
+		rrt_config(it, 1.0 / 3, 0.3, 1, 0, true, false, false, false);
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c1.push_back(rrt_output.end_distance_cost);
+		y1.push_back(rrt_output.distance_cost);
+		t1.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		rrt_config(it, 1.0 / 3, 0.3, 1, 0, true, false, true, false);
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c2.push_back(rrt_output.end_distance_cost);
+		y2.push_back(rrt_output.distance_cost);
+		t2.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		cout << endl << "----------------------------------------" << endl << endl;
+	}
+
+	figure_size(1200, 800);
+	plot(x, c1, { {"label", "Baseline"}, {"linestyle", "--"}, {"color", "black"}, { "marker", "o" }});
+	plot(x, c2, { {"label", "Relaxation optimized"}, {"linestyle", "-"}, {"color", "black"}, {"marker", "x"} });
+	plot(x, c, { {"label", "Accurate"}, {"linestyle", "-"}, {"color", "red"}, {"marker", "None"} });
+	title("Relaxation Optimize Experiment", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Iterations", { {"fontweight", "bold"} });
+	ylabel("Average End Distance Cost", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageEndDistanceCost-Iterations.png");
+	close();
+
+	figure_size(1200, 800);
+	plot(x, y1, { {"label", "Baseline"}, {"linestyle", "--"}, {"color", "black"}, {"marker", "o"} });
+	plot(x, y2, { {"label", "Relaxation optimized"}, {"linestyle", "-"}, {"color", "black"}, {"marker", "x"} });
+	title("Relaxation Optimize Experiment", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Iterations", { {"fontweight", "bold"} });
+	ylabel("Average Distance Cost", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageDistanceCost-Iterations.png");
+	close();
+
+	figure_size(1200, 800);
+	plot(x, t1, { {"label", "Baseline"}, {"linestyle", "--"}, {"color", "black"}, {"marker", "o"} });
+	plot(x, t2, { {"label", "Relaxation optimized"}, {"linestyle", "-"}, {"color", "black"}, {"marker", "x"} });
+	title("Relaxation Optimize Experiment", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Iterations", { {"fontweight", "bold"} });
+	ylabel("Average Time Cost/s", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageTimeCost-Iterations.png");
+	close();
+}
+
+void octree_optimize_experiment()
+{
+	init_robot_arm(3, 3);
+	set_base_position(0, 3);
+	set_end_position(0, 4.5, 0, 1.5);
+	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
+	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
+	cout << "Iterations: 3000; RRT Goal Bias Ratio: 0.3; Step Ratio: 1/3; neighbor range ratio: 1" << endl << endl << endl;
+
+	ofstream file("RRT算法八叉树优化实验.csv");
+	file << "实验配置：机械臂(3 3)，末端z坐标减小3" << endl;
+	file << "Beam算法配置：束宽5，搜索步长0.07，θ-线性模型" << endl;
+	file << "RRT算法配置：迭代次数3000，目标偏置0.3，步长比1/3，邻域半径比1，松弛优化" << endl << endl;
+	file << "障碍物参数, (0.33 0.5), (0.33 1), (0.33 2), (0.67 0.5), (0.67 1), (0.67 2)" << endl;
+
+	vector<string> x;
+	vector<double> c1, c2, y1, y2, t1, t2;
+	x.reserve(6);
+	c1.reserve(6);
+	c2.reserve(6);
+	y1.reserve(6);
+	y2.reserve(6);
+	t1.reserve(6);
+	t2.reserve(6);
+
+	for (int o_opt = 0; o_opt <= 1; o_opt++)
+	{
+		vector<double>& c = o_opt ? c2 : c1;
+		vector<double>& y = o_opt ? y2 : y1;
+		vector<double>& t = o_opt ? t2 : t1;
+		if (!o_opt)
+		{
+			cout << "Without Octree Optimization" << endl;
+			file << "无八叉树优化, ";
+		}
+		else
+		{
+			cout << "With Octree Optimization" << endl;
+			file << "八叉树优化, ";
+		}
+	    rrt_config(3000, 1.0 / 3, 0.3, 1, 0, true, o_opt, true, false);
+
+		set_obstacles(0.33, 0.5);
+		cout << "Obstacle settings: 0.33, 0.5" << endl;
+		x.push_back("(0.33, 0.5)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		y.push_back(rrt_output.distance_cost);
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.33, 1);
+		cout << "Obstacle settings: 0.33, 1" << endl;
+		x.push_back("(0.33, 1)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		y.push_back(rrt_output.distance_cost);
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.33, 2);
+		cout << "Obstacle settings: 0.33, 2" << endl;
+		x.push_back("(0.33, 2)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		y.push_back(rrt_output.distance_cost);
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 0.5);
+		cout << "Obstacle settings: 0.67, 0.5" << endl;
+		x.push_back("(0.67, 0.5)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		y.push_back(rrt_output.distance_cost);
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 1);
+		cout << "Obstacle settings: 0.67, 1" << endl;
+		x.push_back("(0.67, 1)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		y.push_back(rrt_output.distance_cost);
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 2);
+		cout << "Obstacle settings: 0.67, 2" << endl;
+		x.push_back("(0.67, 2)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		y.push_back(rrt_output.distance_cost);
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		cout << endl << "----------------------------------------" << endl << endl;
+		file << endl;
+	}
 }
