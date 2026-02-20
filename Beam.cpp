@@ -34,7 +34,7 @@ void beam_config(int k, WeightModel wm, double w, double r, double s, bool opt)
 {
     K = k;
     W_MODEL = wm;
-    if(W_MODEL == NONE) BEAM_W = w;
+    if(W_MODEL == WeightModel::NONE) BEAM_W = w;
     range = r;
     beam_step = s;
     beam_optimize = opt;
@@ -54,16 +54,16 @@ void update_weight(double z, double theta)
 {
     switch (W_MODEL)
     {
-    case Z_LINEAR:
+    case WeightModel::Z_LINEAR:
         BEAM_W = 0.07318707 * z - 0.02505444;
         break;
-    case Z_EXPONENTIAL:
+    case WeightModel::Z_EXPONENTIAL:
         BEAM_W = 0.05498141 * exp(0.3700402 * z);
         break;
-    case THETA_LINEAR:
+    case WeightModel::THETA_LINEAR:
         BEAM_W = 0.12427096 * theta - 0.03097439;
         break;
-    case THETA_LOGARITHMIC:
+    case WeightModel::THETA_LOGARITHMIC:
         BEAM_W = 0.24801019 * log(theta) + 0.05821501;
         if (BEAM_W < 0) BEAM_W = 0;
         break;
@@ -147,7 +147,7 @@ Beam_Output _beam_search(double x1, double y1, double z1, double x2, double y2, 
         _z += delta_z;
         for (int j = 0; j < size; j++)
         {
-            if (W_MODEL != NONE) update_weight(_z - delta_z, calculate_angle(dist3(x0[j], y0[j], 0, _x - delta_x, _y - delta_y, _z - delta_z)));
+            if (W_MODEL != WeightModel::NONE) update_weight(_z - delta_z, calculate_angle(dist3(x0[j], y0[j], 0, _x - delta_x, _y - delta_y, _z - delta_z)));
             int indice = tree_index[j];
             for (dx = -range; dx <= range; dx += beam_step)
                 for (dy = -range; dy <= range; dy += beam_step)

@@ -14,7 +14,7 @@ typedef struct
 	double time_cost;
 }Beam_Output;
 
-enum WeightModel
+enum class WeightModel
 {
 	NONE,
 	Z_LINEAR,

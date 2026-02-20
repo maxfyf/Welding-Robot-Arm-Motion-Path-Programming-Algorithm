@@ -17,7 +17,7 @@ void Beam_test()
 	init_robot_arm(3, 3);
 	set_base_position(0, 4);
 	set_end_position(0, 2, 10, 2);
-	beam_config(3, NONE, 0, 0.5, 0.05, false);
+	beam_config(3, WeightModel::NONE, 0, 0.5, 0.05, false);
 	beam_output = beam_search();
 	demonstrate_beam_results(beam_output);
 	reset_beam();
@@ -30,8 +30,8 @@ void RRT_test()
 	set_base_position(0, 3);
 	set_obstacles(0.5, 1);
 	set_end_position(0, 4, 0, 2);
-	beam_config(3, NONE, 0, 0.5, 0.05, false);
-	rrt_config(1000, 1.0 / 5, 0.5, 0, 0, true, true, true, false);
+	beam_config(3, WeightModel::NONE, 0, 0.5, 0.05, false);
+	rrt_config(1000, 1.0 / 5, 0.5, 0, 0, true, true, true, HeuristicFunction::NONE);
 	rrt_output = RRT_search();
 	demonstrate_rrt_results(rrt_output);
 	reset_rrt();
@@ -67,7 +67,7 @@ void adjust_beam_width()
 		x.push_back(k);
 
 		cout << "Step: " << 0.01 << endl;
-		beam_config(k, NONE, 1, 0.1, 0.01, false);
+		beam_config(k, WeightModel::NONE, 1, 0.1, 0.01, false);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -83,7 +83,7 @@ void adjust_beam_width()
 		reset_beam();
 
 		cout << "Step: " << 0.02 << endl;
-		beam_config(k, NONE, 1, 0.2, 0.02, false);
+		beam_config(k, WeightModel::NONE, 1, 0.2, 0.02, false);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -99,7 +99,7 @@ void adjust_beam_width()
 		reset_beam();
 
 		cout << "Step: " << 0.05 << endl;
-		beam_config(k, NONE, 1, 0.5, 0.05, false);
+		beam_config(k, WeightModel::NONE, 1, 0.5, 0.05, false);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -115,7 +115,7 @@ void adjust_beam_width()
 		reset_beam();
 
 		cout << "Step: " << 0.1 << endl;
-		beam_config(k, NONE, 1, 1.0, 0.1, false);
+		beam_config(k, WeightModel::NONE, 1, 1.0, 0.1, false);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -186,7 +186,7 @@ void adjust_beam_step()
 		set_base_position(0, 2);
 		set_end_position(0, 2, 10, 2);
 		cout << "Basic settings: 3, 3; 0, 2; 0, 2, 10, 2" << endl;
-		beam_config(k, NONE, 1, 10 * step, step, false);
+		beam_config(k, WeightModel::NONE, 1, 10 * step, step, false);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -204,7 +204,7 @@ void adjust_beam_step()
 		set_base_position(0, 4);
 		set_end_position(0, 2, 10, 2);
 		cout << "Basic settings: 3, 3; 0, 4; 0, 2, 10, 2" << endl;
-		beam_config(k, NONE, 1, 10 * step, step, false);
+		beam_config(k, WeightModel::NONE, 1, 10 * step, step, false);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -222,7 +222,7 @@ void adjust_beam_step()
 		set_base_position(0, 2);
 		set_end_position(0, 4, 10, 4);
 		cout << "Basic settings: 3, 3; 0, 2; 0, 4, 10, 4" << endl;
-		beam_config(k, NONE, 1, 10 * step, step, false);
+		beam_config(k, WeightModel::NONE, 1, 10 * step, step, false);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -240,7 +240,7 @@ void adjust_beam_step()
 		set_base_position(0, 4);
 		set_end_position(0, 4, 10, 4);
 		cout << "Basic settings: 3, 3; 0, 4; 0, 4, 10, 4" << endl;
-		beam_config(k, NONE, 1, 10 * step, step, false);
+		beam_config(k, WeightModel::NONE, 1, 10 * step, step, false);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -290,7 +290,7 @@ void primary_Beam_experiment()
 	init_robot_arm(3, 3);
 	int k = 5;
 	double step = 0.07;
-	beam_config(5, NONE, 1, 0.7, 0.07, false);
+	beam_config(5, WeightModel::NONE, 1, 0.7, 0.07, false);
 	cout << "Beam Width: " << k << ", Step: " << step << endl << endl << endl;
 
 	vector<double> x, y1, y2, y3, y4, z1, z2, z3, z4;
@@ -311,7 +311,7 @@ void primary_Beam_experiment()
 		set_base_position(0, 2);
 		set_end_position(0, 2, 10, 2);
 		cout << "Basic settings: 3, 3; 0, 2; 0, 2, 10, 2" << endl;
-		beam_config(k, NONE, w, 10 * step, step, true);
+		beam_config(k, WeightModel::NONE, w, 10 * step, step, true);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -329,7 +329,7 @@ void primary_Beam_experiment()
 		set_base_position(0, 4);
 		set_end_position(0, 2, 10, 2);
 		cout << "Basic settings: 3, 3; 0, 4; 0, 2, 10, 2" << endl;
-		beam_config(k, NONE, w, 10 * step, step, true);
+		beam_config(k, WeightModel::NONE, w, 10 * step, step, true);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -347,7 +347,7 @@ void primary_Beam_experiment()
 		set_base_position(0, 2);
 		set_end_position(0, 4, 10, 4);
 		cout << "Basic settings: 3, 3; 0, 2; 0, 4, 10, 4" << endl;
-		beam_config(k, NONE, w, 10 * step, step, true);
+		beam_config(k, WeightModel::NONE, w, 10 * step, step, true);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -365,7 +365,7 @@ void primary_Beam_experiment()
 		set_base_position(0, 4);
 		set_end_position(0, 4, 10, 4);
 		cout << "Basic settings: 3, 3; 0, 4; 0, 4, 10, 4" << endl;
-		beam_config(k, NONE, w, 10 * step, step, true);
+		beam_config(k, WeightModel::NONE, w, 10 * step, step, true);
 		beam_output = beam_search();
 		print_beam_cost(beam_output);
 		if (beam_output.success)
@@ -415,7 +415,7 @@ void Beam_experiment()
 	init_robot_arm(3, 3);
 	int k = 5;
 	double step = 0.07;
-	beam_config(k, NONE, 1, 10 * step, step, false);
+	beam_config(k, WeightModel::NONE, 1, 10 * step, step, false);
 	cout << "Beam Width: " << k << ", Step: " << step << endl << endl << endl;
 	ofstream file("Beam_experiment.csv");
 	file << "Beam Experiment (Beam Width = " << k << " Step = " << step << ")\n";
@@ -433,7 +433,7 @@ void Beam_experiment()
 			for (double w = 0; w <= 0.5; w += 0.1)
 			{
 				cout << "Weight: " << w << endl;
-				beam_config(k, NONE, w, 10 * step, step, true);
+				beam_config(k, WeightModel::NONE, w, 10 * step, step, true);
 				beam_output = beam_search();
 				print_beam_cost(beam_output);
 				file << w << ", " << beam_output.distance_cost << "\n";
@@ -469,15 +469,15 @@ void adjust_beam_weight_model()
 		file << i + 1 << ", ";
 		cout << "Base Position: (" << x_b1 << ", " << y_b1 << ", 0), End Position: (" << x_e1 << ", 0, " << z_e1 << ") to (" << x_e2 << ", 0, " << z_e2 << ")" << endl;
 
-		beam_config(k, NONE, 0, 10 * step, step, true);
+		beam_config(k, WeightModel::NONE, 0, 10 * step, step, true);
 		baseline = beam_search();
 		cout << "Baseline: Cost = " << baseline.distance_cost << endl;
 		reset_beam();
 
 		model = baseline;
-		wm = NONE;
+		wm = WeightModel::NONE;
 
-		beam_config(k, Z_LINEAR, 0, 10 * step, step, true); 
+		beam_config(k, WeightModel::Z_LINEAR, 0, 10 * step, step, true); 
 		beam_output = beam_search();
 		optimization_ratio = (baseline.distance_cost - beam_output.distance_cost) / baseline.distance_cost * 100;
 		file << optimization_ratio << ", ";
@@ -485,11 +485,11 @@ void adjust_beam_weight_model()
 		if(beam_output.success && beam_output.distance_cost <= model.distance_cost)
 		{
 			model = beam_output;
-			wm = Z_LINEAR;
+			wm = WeightModel::Z_LINEAR;
 		}
 		reset_beam();
 
-		beam_config(k, Z_EXPONENTIAL, 0, 10 * step, step, true);
+		beam_config(k, WeightModel::Z_EXPONENTIAL, 0, 10 * step, step, true);
 		beam_output = beam_search();
 		optimization_ratio = (baseline.distance_cost - beam_output.distance_cost) / baseline.distance_cost * 100;
 		file << optimization_ratio << ", ";
@@ -497,11 +497,11 @@ void adjust_beam_weight_model()
 		if (beam_output.success && beam_output.distance_cost <= model.distance_cost)
 		{
 			model = beam_output;
-			wm = Z_EXPONENTIAL;
+			wm = WeightModel::Z_EXPONENTIAL;
 		}
 		reset_beam();
 
-		beam_config(k, THETA_LINEAR, 0, 10 * step, step, true);
+		beam_config(k, WeightModel::THETA_LINEAR, 0, 10 * step, step, true);
 		beam_output = beam_search();
 		optimization_ratio = (baseline.distance_cost - beam_output.distance_cost) / baseline.distance_cost * 100;
 		file << optimization_ratio << ", ";
@@ -509,11 +509,11 @@ void adjust_beam_weight_model()
 		if (beam_output.success && beam_output.distance_cost <= model.distance_cost)
 		{
 			model = beam_output;
-			wm = THETA_LINEAR;
+			wm = WeightModel::THETA_LINEAR;
 		}
 		reset_beam();
 
-		beam_config(k, THETA_LOGARITHMIC, 0, 10 * step, step, true);
+		beam_config(k, WeightModel::THETA_LOGARITHMIC, 0, 10 * step, step, true);
 		beam_output = beam_search();
 		optimization_ratio = (baseline.distance_cost - beam_output.distance_cost) / baseline.distance_cost * 100;
 		file << optimization_ratio << ", ";
@@ -521,12 +521,12 @@ void adjust_beam_weight_model()
 		if (beam_output.success && beam_output.distance_cost <= model.distance_cost)
 		{
 			model = beam_output;
-			wm = THETA_LOGARITHMIC;
+			wm = WeightModel::THETA_LOGARITHMIC;
 		}
 		reset_beam();
 
 		cout << endl;
-		if (wm == NONE)
+		if (wm == WeightModel::NONE)
 		{
 			cout << "Best Model: no optimization" << endl << endl;
 			file << "无优化" << endl;
@@ -538,19 +538,19 @@ void adjust_beam_weight_model()
 			cout << "Best Model: ";
 			switch (wm)
 			{
-			case Z_LINEAR:
+			case WeightModel::Z_LINEAR:
 				cout << "z linear model" << endl;
 				file << "w-z线性模型" << endl;
 				break;
-			case Z_EXPONENTIAL:
+			case WeightModel::Z_EXPONENTIAL:
 				cout << "z exponential model" << endl;
 				file << "w-z指数模型" << endl;
 				break;
-			case THETA_LINEAR:
+			case WeightModel::THETA_LINEAR:
 				cout << "theta linear model" << endl;
 				file << "w-θ线性模型" << endl;
 				break;
-			case THETA_LOGARITHMIC:
+			case WeightModel::THETA_LOGARITHMIC:
 				cout << "theta logarithmic model" << endl;
 				file << "w-θ对数模型" << endl;
 				break;
@@ -592,7 +592,7 @@ void RRT_goal_bias_experiment()
 	set_base_position(0, 3);
 	set_end_position(0, 4.5, 0, 1.5);
 	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
-	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	beam_config(5, WeightModel::THETA_LINEAR, 0, 0.7, 0.07, true);
 	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl << endl << endl;
 
 	pair<double, double> p;
@@ -615,7 +615,7 @@ void RRT_goal_bias_experiment()
 	{
 		cout << "Goal Bias Ratio: " << i << endl;
 		x.push_back(i);
-		rrt_config(1000, 1.0 / 5, i, 0, 0, true, false, false, false);
+		rrt_config(1000, 1.0 / 5, i, 0, 0, true, false, false, HeuristicFunction::NONE);
 
 		set_obstacles(0.33, 0.5);
 		cout << "Obstacle settings: 0.33, 0.5" << endl;
@@ -759,7 +759,7 @@ void adjust_rrt_step_ratio()
 	set_base_position(0, 3);
 	set_end_position(0, 4.5, 0, 1.5);
 	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
-	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	beam_config(5, WeightModel::THETA_LINEAR, 0, 0.7, 0.07, true);
 	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
 	cout << "RRT Goal Bias Ratio: 0.3" << endl << endl << endl;
 
@@ -788,7 +788,7 @@ void adjust_rrt_step_ratio()
 	{
 		cout << "RRT Step Ratio: 1/" << i << endl;
 		x.push_back(i);
-		rrt_config(1000, 1.0 / i, 0.3, 0, 0, true, false, false, false);
+		rrt_config(1000, 1.0 / i, 0.3, 0, 0, true, false, false, HeuristicFunction::NONE);
 
 		set_obstacles(0.33, 0.5);
 		cout << "Obstacle settings: 0.33, 0.5" << endl;
@@ -953,7 +953,7 @@ void adjust_rrt_neighbor_range_ratio()
 	set_base_position(0, 3);
 	set_end_position(0, 4.5, 0, 1.5);
 	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
-	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	beam_config(5, WeightModel::THETA_LINEAR, 0, 0.7, 0.07, true);
 	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
 	cout << "RRT Goal Bias Ratio: 0.3; Step Ratio: 1/3" << endl << endl << endl;
 
@@ -981,7 +981,7 @@ void adjust_rrt_neighbor_range_ratio()
 	{
 		cout << "Neighbor Range Ratio: " << nrr << endl;
 		x.push_back(nrr);
-		rrt_config(1000, 1.0 / 3, 0.3, nrr, 0, true, false, true, false);
+		rrt_config(1000, 1.0 / 3, 0.3, nrr, 0, true, false, true, HeuristicFunction::NONE);
 
 		set_obstacles(0.33, 0.5);
 		cout << "Obstacle settings: 0.33, 0.5" << endl;
@@ -1148,7 +1148,7 @@ void relaxation_optimize_experiment()
 	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
 	set_obstacles(0.5, 1);
 	cout << "Obstacle settings: 0.5, 1" << endl;
-	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	beam_config(5, WeightModel::THETA_LINEAR, 0, 0.7, 0.07, true);
 	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
 	cout << "Iterations: 3000; RRT Goal Bias Ratio: 0.3; Step Ratio: 1/3; neighbor range ratio: 1" << endl << endl << endl;
 
@@ -1165,7 +1165,7 @@ void relaxation_optimize_experiment()
 		x.push_back(it);
 		c.push_back(4);
 
-		rrt_config(it, 1.0 / 3, 0.3, 1, 0, true, false, false, false);
+		rrt_config(it, 1.0 / 3, 0.3, 1, 0, true, false, false, HeuristicFunction::NONE);
 		for (int j = 0; j < 100; j++)
 		{
 			RRT_Output* p = new RRT_Output();
@@ -1182,7 +1182,7 @@ void relaxation_optimize_experiment()
 			delete rrt_outputs[j];
 		rrt_outputs.clear();
 
-		rrt_config(it, 1.0 / 3, 0.3, 1, 0, true, false, true, false);
+		rrt_config(it, 1.0 / 3, 0.3, 1, 0, true, false, true, HeuristicFunction::NONE);
 		for (int j = 0; j < 100; j++)
 		{
 			RRT_Output* p = new RRT_Output();
@@ -1243,7 +1243,7 @@ void octree_optimize_experiment()
 	set_base_position(0, 3);
 	set_end_position(0, 4.5, 0, 1.5);
 	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
-	beam_config(5, THETA_LINEAR, 0, 0.7, 0.07, true);
+	beam_config(5, WeightModel::THETA_LINEAR, 0, 0.7, 0.07, true);
 	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
 	cout << "Iterations: 3000; RRT Goal Bias Ratio: 0.3; Step Ratio: 1/3; neighbor range ratio: 1" << endl << endl << endl;
 
@@ -1278,7 +1278,7 @@ void octree_optimize_experiment()
 			cout << "With Octree Optimization" << endl;
 			file << "八叉树优化, ";
 		}
-	    rrt_config(3000, 1.0 / 3, 0.3, 1, 0, true, o_opt, true, false);
+	    rrt_config(3000, 1.0 / 3, 0.3, 1, 0, true, o_opt, true, HeuristicFunction::NONE);
 
 		set_obstacles(0.33, 0.5);
 		cout << "Obstacle settings: 0.33, 0.5" << endl;
@@ -1394,6 +1394,347 @@ void octree_optimize_experiment()
 		rrt_output = print_rrt_average_cost(rrt_outputs);
 		c.push_back(rrt_output.end_distance_cost);
 		y.push_back(rrt_output.distance_cost);
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		cout << endl << "----------------------------------------" << endl << endl;
+		file << endl;
+	}
+}
+
+void heuristic_optimize_experiment()
+{
+	init_robot_arm(3, 3);
+	set_base_position(0, 3);
+	set_end_position(0, 4.5, 0, 1.5);
+	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
+	set_obstacles(0.5, 1);
+	cout << "Obstacle settings: 0.5, 1" << endl;
+	beam_config(5, WeightModel::THETA_LINEAR, 0, 0.7, 0.07, true);
+	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
+	cout << "Iterations: 3000; RRT Goal Bias Ratio: 0.3; Step Ratio: 1/3; neighbor range ratio: 1" << endl << endl << endl;
+
+	vector<double> x, c1, c2, c3, c4, y1, y2, y3, y4, t1, t2, t3, t4;
+	x.reserve(10);
+	c1.reserve(10);
+	c2.reserve(10);
+	c3.reserve(10);
+	c4.reserve(10);
+	y1.reserve(10);
+	y2.reserve(10);
+	y3.reserve(10);
+	y4.reserve(10);
+	t1.reserve(10);
+	t2.reserve(10);
+	t3.reserve(10);
+	t4.reserve(10);
+
+	rrt_config(3000, 1.0 / 3, 0.3, 1, 0, true, true, true, HeuristicFunction::NONE);
+	cout << "Baseline:" << endl;
+	for (int j = 0; j < 100; j++)
+	{
+		RRT_Output* p = new RRT_Output();
+		*p = RRT_search();
+		rrt_outputs.push_back(p);
+		reset_rrt();
+		reset_position();
+	}
+	rrt_output = print_rrt_average_cost(rrt_outputs);
+	for(int i = 0; i < 10; i++)
+	{
+		c1.push_back(rrt_output.end_distance_cost);
+		y1.push_back(rrt_output.distance_cost);
+		t1.push_back(rrt_output.time_cost);
+	}
+	for (int j = 0; j < rrt_outputs.size(); j++)
+		delete rrt_outputs[j];
+	rrt_outputs.clear();
+
+	for (double w = 0.1; w <= 1; w += 0.1)
+	{
+		x.push_back(w);
+		cout << "Heuristic weight: " << w << endl << endl;
+
+		rrt_config(3000, 1.0 / 3, 0.3, 1, w, true, true, true, HeuristicFunction::END);
+		cout << "End Model" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c2.push_back(rrt_output.end_distance_cost);
+		y2.push_back(rrt_output.distance_cost);
+		t2.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		rrt_config(3000, 1.0 / 3, 0.3, 1, w, true, true, true, HeuristicFunction::BOTTLENECKPOINT);
+		cout << "Bottleneck Point Model" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c3.push_back(rrt_output.end_distance_cost);
+		y3.push_back(rrt_output.distance_cost);
+		t3.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		rrt_config(3000, 1.0 / 3, 0.3, 1, w, true, true, true, HeuristicFunction::HYBRID);
+		cout << "Hybrid Model" << endl;
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c4.push_back(rrt_output.end_distance_cost);
+		y4.push_back(rrt_output.distance_cost);
+		t4.push_back(rrt_output.time_cost);
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		cout << endl << "----------------------------------------" << endl << endl;
+	}
+	
+	figure_size(1200, 800);
+	plot(x, c1, { {"label", "Baseline"}, {"linestyle", "-"}, {"color", "red"}, { "marker", "None"}});
+	plot(x, c2, { {"label", "End model"}, {"linestyle", "-"}, {"color", "yellow"}, {"marker", "o"} });
+	plot(x, c3, { {"label", "Bottleneck point model"}, {"linestyle", "-"}, {"color", "blue"}, {"marker", "d"} });
+	plot(x, c4, { {"label", "Hybrid model"}, {"linestyle", "-"}, {"color", "green"}, {"marker", "s"} });
+	title("Heuristic Optimize Experiment", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Heuristic Weight", { {"fontweight", "bold"} });
+	ylabel("Average End Distance Cost", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageEndDistanceCost-HeuristicWeight.png");
+	close();
+
+	figure_size(1200, 800);
+	plot(x, y1, { {"label", "Baseline"}, {"linestyle", "-"}, {"color", "red"}, { "marker", "None"} });
+	plot(x, y2, { {"label", "End model"}, {"linestyle", "-"}, {"color", "yellow"}, {"marker", "o"} });
+	plot(x, y3, { {"label", "Bottleneck point model"}, {"linestyle", "-"}, {"color", "blue"}, {"marker", "d"} });
+	plot(x, y4, { {"label", "Hybrid model"}, {"linestyle", "-"}, {"color", "green"}, {"marker", "s"} });
+	title("Heuristic Optimize Experiment", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Heuristic Weight", { {"fontweight", "bold"} });
+	ylabel("Average Distance Cost", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageDistanceCost-HeuristicWeight.png");
+	close();
+
+	figure_size(1200, 800);
+	plot(x, t1, { {"label", "Baseline"}, {"linestyle", "-"}, {"color", "red"}, { "marker", "None"} });
+	plot(x, t2, { {"label", "End model"}, {"linestyle", "-"}, {"color", "yellow"}, {"marker", "o"} });
+	plot(x, t3, { {"label", "Bottleneck point model"}, {"linestyle", "-"}, {"color", "blue"}, {"marker", "d"} });
+	plot(x, t4, { {"label", "Hybrid model"}, {"linestyle", "-"}, {"color", "green"}, {"marker", "s"} });
+	title("Heuristic Optimize Experiment", { {"fontweight", "bold"}, {"fontsize", "16"} });
+	xlabel("Heuristic weight", { {"fontweight", "bold"} });
+	ylabel("Average Time Cost", { {"fontweight", "bold"} });
+	legend();
+	grid(true);
+	save("AverageTimeCost-HeuristicWeight.png");
+	close();
+}
+
+void optimization_validation()
+{
+	init_robot_arm(3, 3);
+	set_base_position(0, 3);
+	set_end_position(0, 4.5, 0, 1.5);
+	cout << "Basic settings: 3, 3; 0, 3; 0, 4.5, 0, 1.5" << endl;
+	beam_config(5, WeightModel::THETA_LINEAR, 0, 0.7, 0.07, true);
+	cout << "Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
+	cout << "RRT Algorithm settings: 3000, 1/3, 0.3, 1, 1" << endl << endl << endl;
+
+	ofstream file("RRT优化算法验证实验.csv");
+	file << "实验配置：机械臂(3 3)，末端z坐标减小3" << endl;
+	file << "Beam算法配置：束宽5，搜索步长0.07，θ-线性模型" << endl;
+	file << "RRT算法配置：迭代次数3000，目标偏置0.3，步长比1/3，邻域半径比1，启发项权重1" << endl << endl;
+	file << "障碍物参数, , (0.33 0.5), , , (0.33 1), , , (0.33 2), , , (0.67 0.5), , , (0.67 1), , , (0.67 2)" << endl;
+	file << "指标, 平均终点代价, 平均总代价, 平均时间代价/s, 平均终点代价, 平均总代价, 平均时间代价/s, 平均终点代价, 平均总代价, 平均时间代价/s, 平均终点代价, 平均总代价, 平均时间代价/s, 平均终点代价, 平均总代价, 平均时间代价/s, 平均终点代价, 平均总代价, 平均时间代价/s" << endl;
+	
+	vector<string> x;
+	vector<double> c1, c2, c3, y1, y2, y3, t1, t2, t3;
+	x.reserve(6);
+	c1.reserve(6);
+	c2.reserve(6);
+	c3.reserve(6);
+	y1.reserve(6);
+	y2.reserve(6);
+	y3.reserve(6);
+	t1.reserve(6);
+	t2.reserve(6);
+	t3.reserve(6);
+
+	for (int i = 0; i < 3; i++)
+	{
+		vector<double>& c = i ? ((i == 1) ? c2 : c3) : c1;
+		vector<double>& y = i ? ((i == 1) ? y2 : y3) : y1;
+		vector<double>& t = i ? ((i == 1) ? t2 : t3) : t1;
+		switch(i)
+		{
+		case 0:
+			cout << "Baseline" << endl;
+			file << "基线, ";
+			rrt_config(3000, 1.0 / 3, 0.3, 0, 0, true, false, false, HeuristicFunction::NONE);
+			break;
+		case 1:
+			cout << "Relaxation Optimize" << endl;
+			file << "松弛优化, ";
+			rrt_config(3000, 1.0 / 3, 0.3, 1, 0, true, false, true, HeuristicFunction::NONE);
+			break;
+		default:
+			cout << "Relaxation, octree, heuristics Optimize" << endl;
+			file << "松弛、八叉树、启发式优化, ";
+			rrt_config(3000, 1.0 / 3, 0.3, 1, 1, true, true, true, HeuristicFunction::HYBRID);
+			break;
+		}
+
+		set_obstacles(0.33, 0.5);
+		cout << "Obstacle settings: 0.33, 0.5" << endl;
+		x.push_back("(0.33, 0.5)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		file << rrt_output.end_distance_cost << ", ";
+		y.push_back(rrt_output.distance_cost);
+		file << rrt_output.distance_cost << ", ";
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.33, 1);
+		cout << "Obstacle settings: 0.33, 1" << endl;
+		x.push_back("(0.33, 1)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		file << rrt_output.end_distance_cost << ", ";
+		y.push_back(rrt_output.distance_cost);
+		file << rrt_output.distance_cost << ", ";
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.33, 2);
+		cout << "Obstacle settings: 0.33, 2" << endl;
+		x.push_back("(0.33, 2)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		file << rrt_output.end_distance_cost << ", ";
+		y.push_back(rrt_output.distance_cost);
+		file << rrt_output.distance_cost << ", ";
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 0.5);
+		cout << "Obstacle settings: 0.67, 0.5" << endl;
+		x.push_back("(0.67, 0.5)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		file << rrt_output.end_distance_cost << ", ";
+		y.push_back(rrt_output.distance_cost);
+		file << rrt_output.distance_cost << ", ";
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 1);
+		cout << "Obstacle settings: 0.67, 1" << endl;
+		x.push_back("(0.67, 1)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		file << rrt_output.end_distance_cost << ", ";
+		y.push_back(rrt_output.distance_cost);
+		file << rrt_output.distance_cost << ", ";
+		t.push_back(rrt_output.time_cost);
+		file << rrt_output.time_cost << ", ";
+		for (int j = 0; j < rrt_outputs.size(); j++)
+			delete rrt_outputs[j];
+		rrt_outputs.clear();
+
+		set_obstacles(0.67, 2);
+		cout << "Obstacle settings: 0.67, 2" << endl;
+		x.push_back("(0.67, 2)");
+		for (int j = 0; j < 100; j++)
+		{
+			RRT_Output* p = new RRT_Output();
+			*p = RRT_search();
+			rrt_outputs.push_back(p);
+			reset_rrt();
+			reset_position();
+		}
+		rrt_output = print_rrt_average_cost(rrt_outputs);
+		c.push_back(rrt_output.end_distance_cost);
+		file << rrt_output.end_distance_cost << ", ";
+		y.push_back(rrt_output.distance_cost);
+		file << rrt_output.distance_cost << ", ";
 		t.push_back(rrt_output.time_cost);
 		file << rrt_output.time_cost << ", ";
 		for (int j = 0; j < rrt_outputs.size(); j++)

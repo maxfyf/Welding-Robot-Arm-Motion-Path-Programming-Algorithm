@@ -22,6 +22,8 @@ void RRT_goal_bias_experiment();
 void adjust_rrt_step_ratio();
 void adjust_rrt_neighbor_range_ratio();
 void relaxation_optimize_experiment();
-void octree_optimize_experiment();
+void octree_optimize_experiment(); 
+void heuristic_optimize_experiment();
+void optimization_validation();
 
 #endif

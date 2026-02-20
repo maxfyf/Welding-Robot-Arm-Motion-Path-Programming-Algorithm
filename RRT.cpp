@@ -16,7 +16,7 @@ double RRT_W;    //启发项权重
 bool goal_bias_optimize;	   //是否目标偏置优化
 bool octree_optimize;    //是否八叉树优化
 bool relaxation_optimize;    //是否松弛优化
-bool heuristic_optimize;    //是否启发式优化
+HeuristicFunction heuristic_function;    //启发式函数
 
 vector<Base> rrt_base_path;    //基座路径
 vector<Joint> rrt_joint_path;    //关节路径
@@ -34,7 +34,7 @@ typedef struct Node
 	double y;
 	double z;
 	double g;    //代价
-	double f;    //代价+启发项
+	double h;    //启发项
 	struct Node* parent;
 }Node;    //搜索树上结点
 vector<Node*> tree;    //搜索树
@@ -319,7 +319,7 @@ void error()
 	throw std::runtime_error("RRT Error");
 }
 
-void rrt_config(int it, double sr, double gb, double nrr, double w, bool gb_opt, bool o_opt, bool r_opt, bool h_opt)
+void rrt_config(int it, double sr, double gb, double nrr, double w, bool gb_opt, bool o_opt, bool r_opt, HeuristicFunction hf)
 {
 	rrt_n = it;
 	rrt_step_ratio = sr;
@@ -329,7 +329,8 @@ void rrt_config(int it, double sr, double gb, double nrr, double w, bool gb_opt,
 	goal_bias_optimize = gb_opt;
 	octree_optimize = o_opt;
 	relaxation_optimize = r_opt;
-	heuristic_optimize = h_opt && r_opt;
+	if(r_opt) heuristic_function = hf;
+	else heuristic_function = HeuristicFunction::NONE;
 
 	octree = NULL;
 }
@@ -380,10 +381,30 @@ bool check_pos(double x, double y, double z)
 	else return (y > h0);
 }
 
+double heuristic(Node* node)
+{
+	double xh, zh, r;
+	switch (heuristic_function)
+	{
+	case HeuristicFunction::NONE:
+		return 0;
+	case HeuristicFunction::END:
+		return dist3(node->x, node->y, node->z, x_e2, 0, z_e2);
+	case HeuristicFunction::BOTTLENECKPOINT:
+		projection(node->x, node->z, xh, zh, r);
+		if (r < 0.5) return dist3(node->x, node->y, node->z, (x_e1 + x_e2) / 2, (h0 + h0 / lr) / 2, (z_e1 + z_e2) / 2);
+		else return -dist3(node->x, node->y, node->z, (x_e1 + x_e2) / 2, (h0 + h0 / lr) / 2, (z_e1 + z_e2) / 2);
+	case HeuristicFunction::HYBRID:
+		projection(node->x, node->z, xh, zh, r);
+		if (r < 0.5) return dist3(node->x, node->y, node->z, (x_e1 + x_e2) / 2, (h0 + h0 / lr) / 2, (z_e1 + z_e2) / 2) + dist3((x_e1 + x_e2) / 2, (h0 + h0 / lr) / 2, (z_e1 + z_e2) / 2, x_e2, 0, z_e2);
+		else return dist3(node->x, node->y, node->z, x_e2, 0, z_e2);
+	}
+}
+
 multimap<double, Node*>::iterator in_openlist(Node* ptr)
 {
-	multimap<double, Node*>::iterator it = openlist.find(heuristic_optimize ? ptr->f : ptr->g);
-	while (it != openlist.end() && it->first == (heuristic_optimize ? ptr->f : ptr->g))
+	multimap<double, Node*>::iterator it = openlist.find(heuristic_function != HeuristicFunction::NONE ? (ptr->g + RRT_W * ptr->h) : ptr->g);
+	while (it != openlist.end() && it->first == (heuristic_function != HeuristicFunction::NONE ? (ptr->g + RRT_W * ptr->h) : ptr->g))
 	{
 		if (it->second == ptr)
 			return it;
@@ -395,7 +416,7 @@ multimap<double, Node*>::iterator in_openlist(Node* ptr)
 Node* route_search()
 {
 	Node* ptr = tree[0];
-	openlist.insert(make_pair(heuristic_optimize ? ptr->f : ptr->g, ptr));
+	openlist.insert(make_pair(heuristic_function != HeuristicFunction::NONE ? (ptr->g + RRT_W * ptr->h) : ptr->g, ptr));
 	while(!openlist.empty())
 	{
 		ptr = openlist.begin()->second;
@@ -413,10 +434,8 @@ Node* route_search()
 				if (it2 == openlist.end())
 				{
 					next->g = ptr->g + dist3(ptr->x, ptr->y, ptr->z, next->x, next->y, next->z);
-					if (heuristic_optimize)
-						next->f = next->g + RRT_W * dist3(next->x, next->y, next->z, x_e2, 0, z_e2);
 					next->parent = ptr;
-					openlist.insert(make_pair(heuristic_optimize ? next->f : next->g, next));
+					openlist.insert(make_pair(heuristic_function != HeuristicFunction::NONE ? (next->g + RRT_W * next->h) : next->g, next));
 				}
 				else
 				{
@@ -424,10 +443,8 @@ Node* route_search()
 					{
 					    openlist.erase(it2);
 						next->g = ptr->g + dist3(ptr->x, ptr->y, ptr->z, next->x, next->y, next->z);
-						if (heuristic_optimize)
-							next->f = next->g + RRT_W * dist3(next->x, next->y, next->z, x_e2, 0, z_e2);
 						next->parent = ptr;
-						openlist.insert(make_pair(heuristic_optimize ? next->f : next->g, next));
+						openlist.insert(make_pair(heuristic_function != HeuristicFunction::NONE ? (next->g + RRT_W * next->h) : next->g, next));
 					}
 				}
 			}
@@ -450,7 +467,9 @@ RRT_Output RRT_search()
 
 	Node* ptr;
 	Node* prev_biased_ptr = NULL;
-	Node* p = new Node({ x_e1, 0, z_e1, relaxation_optimize ? 0 : MAX_DBL, heuristic_optimize ? dist2(x_e1, z_e1, x_e2, z_e2) : MAX_DBL, NULL });
+	Node* p = new Node({ x_e1, 0, z_e1, relaxation_optimize ? 0 : MAX_DBL, MAX_DBL, NULL });
+	if(heuristic_function != HeuristicFunction::NONE)
+		p->h = heuristic(p);
 	tree.push_back(p);
 	if (octree_optimize) octree = new Octree();
 	random_device rd;
@@ -509,6 +528,8 @@ RRT_Output RRT_search()
 			z_dir = ptr->z + (z_dir - ptr->z) * step / min;
 		}
 		p = new Node({ x_dir, y_dir, z_dir, MAX_DBL, MAX_DBL, ptr });
+		if(heuristic_function != HeuristicFunction::NONE)
+			p->h = heuristic(p);
 		tree.push_back(p);
 		if (octree_optimize) octree->insert(p);
 

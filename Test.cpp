@@ -2,6 +2,6 @@
 
 int main()
 {
-    octree_optimize_experiment();
+    optimization_validation();
     return 0;
 }
