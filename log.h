@@ -27,4 +27,6 @@ double print_rrt_average_time_cost(vector<RRT_Output*>& rrt_outputs);
 void print_rrt_cost(RRT_Output& rrt_output);
 RRT_Output print_rrt_average_cost(vector<RRT_Output*>& rrt_outputs);
 
+Beam_Output print_average_total_cost(vector<Beam_Output*>& total_outputs);
+
 #endif

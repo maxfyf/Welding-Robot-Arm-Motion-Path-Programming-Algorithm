@@ -302,3 +302,31 @@ RRT_Output print_rrt_average_cost(vector<RRT_Output*>& rrt_outputs)
 		cout << "Failed" << endl << endl;
 	return rrt_output;
 }
+
+Beam_Output print_average_total_cost(vector<Beam_Output*>& total_outputs)
+{
+	double total_distance = 0;
+	double total_time = 0;
+	int success_count = 0;
+	for (auto& output : total_outputs)
+	{
+		if (output->success)
+		{
+			total_distance += output->distance_cost;
+			total_time += output->time_cost;
+			success_count++;
+		}
+	}
+	Beam_Output total_output = { false, 0, 0 };
+	if (success_count > (total_outputs.size() >> 1))
+	{
+		double average_distance = ((int)((total_distance / success_count) * 100 + 0.5)) / 100.0;
+		double average_time = (int)(total_time / success_count * 1000 + 0.5) / 1000.0;
+		total_output = { true, average_distance, average_time };
+		cout << "Average Search Result: distance = " << average_distance << ", ";
+		cout << "time = " << average_time << "s" << endl << endl;
+	}
+	else
+		cout << "Failed" << endl << endl;
+	return total_output;
+}

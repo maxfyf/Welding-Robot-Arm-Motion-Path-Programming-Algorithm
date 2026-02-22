@@ -26,4 +26,6 @@ void octree_optimize_experiment();
 void heuristic_optimize_experiment();
 void optimization_validation();
 
+void final_optimization_assessment();
+
 #endif

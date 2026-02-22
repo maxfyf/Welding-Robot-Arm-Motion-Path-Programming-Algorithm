@@ -11,6 +11,8 @@ using namespace matplotlibcpp;
 Beam_Output beam_output;
 RRT_Output rrt_output;
 vector<RRT_Output*> rrt_outputs;
+Beam_Output total_output;
+vector<Beam_Output*> total_outputs;
 
 void Beam_test()
 {
@@ -31,7 +33,7 @@ void RRT_test()
 	set_obstacles(0.5, 1);
 	set_end_position(0, 4, 0, 2);
 	beam_config(3, WeightModel::NONE, 0, 0.5, 0.05, false);
-	rrt_config(1000, 1.0 / 5, 0.5, 0, 0, true, true, true, HeuristicFunction::NONE);
+	rrt_config(1000, 1.0 / 5, 0.5, 1, 1, true, true, true, HeuristicFunction::NONE);
 	rrt_output = RRT_search();
 	demonstrate_rrt_results(rrt_output);
 	reset_rrt();
@@ -1740,6 +1742,326 @@ void optimization_validation()
 		for (int j = 0; j < rrt_outputs.size(); j++)
 			delete rrt_outputs[j];
 		rrt_outputs.clear();
+
+		cout << endl << "----------------------------------------" << endl << endl;
+		file << endl;
+	}
+}
+
+/*
+================================
+Comprehensive Experiment
+================================
+ */
+
+void final_optimization_assessment()
+{
+	cout << "Comprehensive Experiment" << endl;
+	ofstream file("综合实验.csv");
+	init_robot_arm(5, 5);
+	cout << "Robot arm settings: 5, 5" << endl;
+	file << "机械臂配置：第一段长度5，第二段长度5" << endl;
+	set_obstacles(0.5, 1.5);
+	cout << "Obstacle settings: 0.5, 1.5" << endl;
+	file << "障碍物配置：宽度占比0.5，高度1.5" << endl << endl << endl;
+
+	vector<string> x;
+	vector<double> d1, d2, t1, t2;
+	x.reserve(3);
+	d1.reserve(3);
+	d2.reserve(3);
+	t1.reserve(3);
+	t2.reserve(3);
+
+	for(int optimize = 0; optimize <= 1; optimize++)
+	{
+		vector<double>& d = optimize ? d2 : d1;
+		vector<double>& t = optimize ? t2 : t1;
+		if (!optimize)
+		{
+			cout << "Baseline" << endl;
+			file << "基线" << endl;
+			beam_config(5, WeightModel::NONE, 0, 0.7, 0.07, false);
+			cout << "Beam Algorithm settings: 5, 0.07" << endl;
+			file << "Beam原始算法配置：束宽5，搜索步长0.07" << endl;
+			rrt_config(3000, 1.0 / 3, 0.3, 0, 0, true, false, false, HeuristicFunction::NONE);
+			cout << "RRT Algorithm settings: 3000, 1/3, 0.3" << endl << endl;
+			file << "RRT原始算法配置：迭代次数上限3000，目标偏置0.3，步长比1/3" << endl << endl;
+		}
+		else
+		{
+			cout << "Optimized" << endl;
+			file << "优化算法" << endl;
+			beam_config(5, WeightModel::THETA_LINEAR, 0, 0.7, 0.07, true);
+			cout << "Optimized Beam Algorithm settings: 5, 0.07, theta linear model" << endl;
+			file << "Beam优化算法配置：束宽5，搜索步长0.07，θ-线性模型" << endl;
+			rrt_config(3000, 1.0 / 3, 0.3, 1, 1, true, true, true, HeuristicFunction::HYBRID);
+			cout << "Optimized RRT Algorithm settings: 3000, 1/3, 0.3, 1, 1, hybrid heuristic function" << endl << endl;
+			file << "RRT优化算法配置：迭代次数上限3000，目标偏置0.3，步长比1/3，邻域半径比1，启发项权重1，混合式启发函数" << endl << endl;
+		}
+		file << "组别, 平均代价, 平均耗时(s)" << endl;
+
+		x.push_back("Horizontal");
+		cout << "Horizontal" << endl << endl;
+		file << "水平组, ";
+		for(int i = 0; i < 100; i++)
+		{
+			Beam_Output* p = new Beam_Output({ true, 0, 0 });
+			set_base_position(0, 5);
+
+			set_end_position(0, 3, 8, 3);
+			beam_output = beam_search();
+			if (beam_output.success)
+			{
+				p->distance_cost += beam_output.distance_cost;
+				p->time_cost += beam_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_beam();
+			update_base_position();
+
+			set_end_position(8, 3, 8, 5);
+			rrt_output = RRT_search();
+			if (rrt_output.success)
+			{
+				p->distance_cost += rrt_output.distance_cost;
+				p->time_cost += rrt_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_rrt();
+			update_base_position();
+
+			set_end_position(8, 5, 0, 5);
+			beam_output = beam_search();
+			if (beam_output.success)
+			{
+				p->distance_cost += beam_output.distance_cost;
+				p->time_cost += beam_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_beam();
+			update_base_position();
+
+			set_end_position(0, 5, 0, 7);
+			rrt_output = RRT_search();
+			if (rrt_output.success)
+			{
+				p->distance_cost += rrt_output.distance_cost;
+				p->time_cost += rrt_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_rrt();
+			update_base_position();
+
+			set_end_position(0, 7, 8, 7);
+			beam_output = beam_search();
+			if (beam_output.success)
+			{
+				p->distance_cost += beam_output.distance_cost;
+				p->time_cost += beam_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_beam();
+			update_base_position();
+
+			total_outputs.push_back(p);
+		}
+		total_output = print_average_total_cost(total_outputs);
+		if(total_output.success)
+		{
+			d.push_back(total_output.distance_cost);
+			t.push_back(total_output.time_cost);
+			file << total_output.distance_cost << ", " << total_output.time_cost << endl;
+		}
+		else
+		{
+			d.push_back(0);
+			t.push_back(0);
+			file << "失败" << endl;
+		}
+		for (int i = 0; i < total_outputs.size(); i++)
+			delete total_outputs[i];
+		total_outputs.clear();
+
+		x.push_back("Inclined");
+		cout << "Inclined" << endl << endl;
+		file << "倾斜组, ";
+		for (int i = 0; i < 100; i++)
+		{
+			Beam_Output* p = new Beam_Output({ true, 0, 0 });
+			set_base_position(0, 5);
+
+			set_end_position(0, 1, 6, 7);
+			beam_output = beam_search();
+			if (beam_output.success)
+			{
+				p->distance_cost += beam_output.distance_cost;
+				p->time_cost += beam_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_beam();
+			update_base_position();
+
+			set_end_position(6, 7, 5, 8);
+			rrt_output = RRT_search();
+			if (rrt_output.success)
+			{
+				p->distance_cost += rrt_output.distance_cost;
+				p->time_cost += rrt_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_rrt();
+			update_base_position();
+
+			set_end_position(5, 8, -1, 2);
+			beam_output = beam_search();
+			if (beam_output.success)
+			{
+				p->distance_cost += beam_output.distance_cost;
+				p->time_cost += beam_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_beam();
+			update_base_position();
+
+			set_end_position(-1, 2, -2, 3);
+			rrt_output = RRT_search();
+			if (rrt_output.success)
+			{
+				p->distance_cost += rrt_output.distance_cost;
+				p->time_cost += rrt_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_rrt();
+			update_base_position();
+
+			set_end_position(-2, 3, 4, 9);
+			beam_output = beam_search();
+			if (beam_output.success)
+			{
+				p->distance_cost += beam_output.distance_cost;
+				p->time_cost += beam_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_beam();
+			update_base_position();
+
+			total_outputs.push_back(p);
+		}
+		total_output = print_average_total_cost(total_outputs);
+		if (total_output.success)
+		{
+			d.push_back(total_output.distance_cost);
+			t.push_back(total_output.time_cost);
+			file << total_output.distance_cost << ", " << total_output.time_cost << endl;
+		}
+		else
+		{
+			d.push_back(0);
+			t.push_back(0);
+			file << "失败" << endl;
+		}
+		for (int i = 0; i < total_outputs.size(); i++)
+			delete total_outputs[i];
+		total_outputs.clear();
+
+		x.push_back("Vertical");
+		cout << "Vertical" << endl << endl;
+		file << "垂直组, ";
+		for (int i = 0; i < 100; i++)
+		{
+			Beam_Output* p = new Beam_Output({ true, 0, 0 });
+			set_base_position(0, 5);
+
+			set_end_position(0, 1, 0, 9);
+			beam_output = beam_search();
+			if (beam_output.success)
+			{
+				p->distance_cost += beam_output.distance_cost;
+				p->time_cost += beam_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_beam();
+			update_base_position();
+
+			set_end_position(0, 9, 2, 9);
+			rrt_output = RRT_search();
+			if (rrt_output.success)
+			{
+				p->distance_cost += rrt_output.distance_cost;
+				p->time_cost += rrt_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_rrt();
+			update_base_position();
+
+			set_end_position(2, 9, 2, 1);
+			beam_output = beam_search();
+			if (beam_output.success)
+			{
+				p->distance_cost += beam_output.distance_cost;
+				p->time_cost += beam_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_beam();
+			update_base_position();
+
+			set_end_position(2, 1, 4, 1);
+			rrt_output = RRT_search();
+			if (rrt_output.success)
+			{
+				p->distance_cost += rrt_output.distance_cost;
+				p->time_cost += rrt_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_rrt();
+			update_base_position();
+
+			set_end_position(4, 1, 4, 9);
+			beam_output = beam_search();
+			if (beam_output.success)
+			{
+				p->distance_cost += beam_output.distance_cost;
+				p->time_cost += beam_output.time_cost;
+			}
+			else
+				p->success = false;
+			reset_beam();
+			update_base_position();
+
+			total_outputs.push_back(p);
+		}
+		total_output = print_average_total_cost(total_outputs);
+		if (total_output.success)
+		{
+			d.push_back(total_output.distance_cost);
+			t.push_back(total_output.time_cost);
+			file << total_output.distance_cost << ", " << total_output.time_cost << endl;
+		}
+		else
+		{
+			d.push_back(0);
+			t.push_back(0);
+			file << "失败" << endl;
+		}
+		for (int i = 0; i < total_outputs.size(); i++)
+			delete total_outputs[i];
+		total_outputs.clear();
+
 
 		cout << endl << "----------------------------------------" << endl << endl;
 		file << endl;
