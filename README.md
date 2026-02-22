@@ -7,20 +7,35 @@
 ### Project Hierarchy
 
 Welding-Robot-Arm-Motion-Path-Programming-Algorithm
+
 |——Test.cpp: the file involving the main function
+
 |——global.h: the header file involving important global variables and statements of global functions
+
 |——global.cpp: the file involving implementations of global functions
+
 |——log.h: the header file involving statements of log functions
+
 |——log.cpp: the file involving implementations of log functions
+
 |——Beam.h: the header file involving important variables and structures of Beam search algorithm as well as statements of functions related to Beam search algorithm
+
 |——Beam.cpp: the file involving implementations of functions related to Beam search algorithm
+
 |——RRT.h: the header file involving important variables and structures of RRT algorithm as well as statements of functions related to RRT algorithm
+
 |——RRT.cpp: the file involving implementations of functions related to RRT algorithm
+
 |——tests.h: the header file involving statements of functions for experiments
+
 |——tests.cpp: the file involving implementations of functions for experiments
+
 |——tools
+
 |——|——matplotlibcpp.h: the C++ header file providing APIs of Python's Matplotlib functions
+
 |——|——python314.dll: auxiliary file supporting the linkage of Python's library
+
 |——README.md: this file
 
 ### Requirements
